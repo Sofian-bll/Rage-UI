@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+projects/
+*.zip
+
+# legacy prototype (kept for reference)
+Rage UI/
+
+# scratch files
+plan.md
+package-lock.json
+secrets.json

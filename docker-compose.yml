@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  sops-gitops-ui:
+    image: sops-gitops-ui:latest
+    container_name: sops-gitops-ui
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - APP_API_KEY=TokenSuperSecurise!
+      - SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
+      # Target file can be customized here or mounted
+      - TARGET_FILE=/projets/secrets.json 
+    volumes:
+      # 1. Clé Rage (SOPS) pour le déchiffrement
+      - /home/sofiane/.config/sops/age/keys.txt:/root/.config/sops/age/keys.txt:ro
+      # 2. Clé SSH (Git) pour l'authentification GitHub/GitLab
+      - /home/sofiane/.ssh/id_rsa:/root/.ssh/id_rsa:ro
+      # 3. Le répertoire des projets homelab (doit être un dépôt Git initialisé)
+      - /home/sofiane/docker-apps:/projets
+    restart: unless-stopped
