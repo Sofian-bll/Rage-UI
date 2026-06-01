@@ -1,7 +1,8 @@
 node_modules/
 dist/
 .env
-projects/
+projects/**/.env
+projects/**/secrets.enc.json
 *.zip
 
 # legacy prototype (kept for reference)

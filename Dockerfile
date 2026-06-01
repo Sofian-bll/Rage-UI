@@ -37,4 +37,4 @@ COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 EXPOSE 3000
 
 # Start the Bun backend
-CMD ["bun", "run", "index.ts"]
+CMD ["bun", "run", "server.ts"]

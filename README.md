@@ -1,72 +1,189 @@
-# Rage UI (SOPS & GitOps Seamless UI)
+# Rage UI — Global Secrets Manager & GitOps Injector
 
-Rage UI est un service auto-hébergé permettant de gérer des secrets via **SOPS** / **Age** de manière transparente, en s'intégrant directement dans un workflow **GitOps**. 
-L'objectif est de fournir une interface web pour modifier des variables d'environnement chiffrées et les synchroniser avec un dépôt Git (GitHub/GitLab) sans jamais ouvrir un terminal.
+Rage UI est un manager de secrets local-first avec interface web. Il permet de gérer des secrets globaux (clés API, tokens) et des secrets par projet, puis de les injecter automatiquement dans des fichiers `.env` via un système de templates, le tout chiffré avec **SOPS + Age** et synchronisé sur Git.
 
-## 🚀 Fonctionnalités
+---
 
-- **Édition Seamless** : Interface web fluide (Vue 3 / React) pour modifier vos secrets en clair.
-- **GitOps Intégré** : Synchronisation en 1-clic (Add, Commit, Push) vers votre dépôt.
-- **Auto-Chiffrement** : Le backend s'occupe de chiffrer (via `sops -e`) et déchiffrer (`sops -d`) à la volée.
-- **Local-First** : Pensé pour tourner dans un Homelab, au plus près de vos fichiers de configuration.
+## Concept en 30 secondes
 
-## 📦 Structure du Projet
+Tu as plusieurs projets (Pokedex, API Météo...) qui ont tous besoin de secrets (un token DigitalOcean par exemple). Plutôt que de copier-coller le même token dans 10 fichiers `.env`, tu fais ça :
 
-Le projet est divisé en deux parties :
-- `/frontend` : L'interface utilisateur construite avec Vite et React.
-- `/backend` : L'API construite avec Bun et Express, qui orchestre `sops` et `git`.
+1. **Un coffre-fort central** : le dossier `global/` contient tes secrets communs (ex: `DO_TOKEN`).
+2. **Un template par projet** : chaque projet a un fichier `.env.template` qui dit ce dont il a besoin (ex: `DO_TOKEN={{GLOBAL.DO_TOKEN}}`).
+3. **Un clic sur "Inject .env"** : Rage UI lit le template, fusionne les secrets globaux + locaux, et génère le vrai `.env`.
 
-## 🛠 Prérequis
+Si ton token DigitalOcean change, tu le modifies **une seule fois** dans `global`, tu cliques sur "Inject" dans chaque projet, et tout est à jour.
 
-Pour utiliser Rage UI, la machine (ou le conteneur) exécutant le backend doit disposer de :
-1. **Git** configuré avec accès SSH (`id_rsa`) à votre dépôt (GitHub/GitLab).
-2. **SOPS** installé.
-3. Une **Clé Age** pour SOPS (généralement dans `~/.config/sops/age/keys.txt`).
-4. Le dossier cible doit être un dépôt Git initialisé.
+```
+PROJECTS_DIR/
+├── global/
+│   └── secrets.enc.json          ← Secrets communs (DO_TOKEN, clés API...)
+├── pokedex/
+│   ├── .env.template             ← DO_TOKEN={{GLOBAL.DO_TOKEN}}
+│   └── secrets.enc.json          ← Secrets propres à Pokedex (PORT=8080)
+└── api_meteo/
+    ├── .env.template
+    └── secrets.enc.json
+```
 
-## 🐳 Utilisation via Docker (Recommandé)
+---
 
-Un fichier `docker-compose.yml` est fourni pour un déploiement facile sur un Homelab.
+## Quickstart Local (tester sur ton PC en 1 minute)
 
-1. Éditez le `docker-compose.yml` pour ajuster les chemins de vos volumes :
-   - Clé Age : `/home/sofiane/.config/sops/age/keys.txt`
-   - Clé SSH : `/home/sofiane/.ssh/id_rsa`
-   - Dossier GitOps : `/home/sofiane/docker-apps` (qui sera monté sur `/projets`)
-2. Définissez la variable `TARGET_FILE` pour pointer vers le fichier de secrets à gérer (ex: `/projets/secrets.json`).
-3. Lancez le conteneur :
-   ```bash
-   docker-compose up -d --build
-   ```
-4. Accédez à l'interface via `http://localhost:3000`.
+### Prérequis
 
-## 💻 Développement Local
+- **Bun** installé (`brew install oven-sh/bun/bun` ou https://bun.sh)
+- **Node.js** installé (pour le frontend)
 
-### Lancer le Backend
+### 1. Lance le Backend (Bun + Express)
+
 ```bash
 cd backend
 bun install
-# Créez un fichier .env avec TARGET_FILE=/chemin/vers/votre/fichier.json
-bun run index.ts
+bun run server.ts
 ```
-Le backend tournera sur `http://localhost:3000`.
 
-### Lancer le Frontend
+Le backend tourne sur `http://localhost:3000`.
+
+### 2. Lance le Frontend (Vite + React)
+
+Dans un **deuxième terminal** :
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Le frontend tournera sur `http://localhost:5173` et redirigera les appels `/api` vers le backend via le proxy de Vite.
 
-## 🧪 Tests
+Le frontend tourne sur `http://localhost:5173`. Les appels `/api` sont automatiquement redirigés vers le backend.
 
-- **Backend** : Les tests unitaires sont écrits avec `bun test`. Lancez `bun test` dans le dossier `backend`.
-- **Frontend** : Les tests unitaires utilisent Vitest. Lancez `npm run test` dans le dossier `frontend`.
-- **E2E** : Les tests end-to-end utilisent Playwright. Lancez `npm run test:e2e` dans le dossier `e2e` (à configurer).
+### 3. Teste dans l'interface
+
+Le dossier `backend/projects/` contient déjà deux projets de test (`pokedex` et `api_meteo`) avec leurs `.env.template`.
+
+1. Dans la sidebar, clique sur **global** → ajoute une variable `POKE_API_KEY` avec la valeur `123456` → clique **Save**.
+2. Clique sur **pokedex** → ajoute une variable `PORT` avec la valeur `8080` → **Save**.
+3. Toujours sur Pokedex, clique sur le bouton ⚡ **Inject .env** en haut à droite.
+4. Ouvre `backend/projects/pokedex/.env` : ton fichier `.env` vient d'être généré avec les valeurs fusionnées !
 
 ---
-### 💡 Réponses aux questions fréquentes
 
-**Est-ce que je vais en faire un... (plusieurs fichiers / un seul fichier) ?**
-Dans l'état actuel (v1.0), le backend lit la variable d'environnement `TARGET_FILE` et gère un seul fichier de secrets à la fois (par exemple `secrets.json`). 
-Cependant, l'architecture prévoit déjà que l'on puisse lister des projets. Pour gérer plusieurs fichiers, on peut facilement faire évoluer le backend pour que `TARGET_FILE` soit un dossier, et que le frontend demande un fichier spécifique (via un paramètre `?file=...` sur les routes API).
+## Structure des Templates
+
+Le fichier `.env.template` utilise des placeholders que Rage UI remplace à l'injection :
+
+| Syntaxe | Source | Exemple |
+|---------|--------|---------|
+| `{{GLOBAL.KEY}}` | Secret du dossier `global/` | `{{GLOBAL.DO_TOKEN}}` |
+| `{{KEY}}` | Secret local du projet | `{{PORT}}` |
+
+**Exemple de `.env.template` :**
+```
+# Pokedex
+POKE_API_KEY={{GLOBAL.POKE_API_KEY}}
+DO_TOKEN={{GLOBAL.DO_TOKEN}}
+PORT={{PORT}}
+HOST=pokedex.local
+```
+
+Les secrets locaux **écrasent** les secrets globaux si le même nom est utilisé.
+
+---
+
+## Docker (Production / Homelab)
+
+Un `docker-compose.yml` est fourni pour un déploiement en conteneur.
+
+Le conteneur embarque tout : le backend Bun, le frontend statique, Git, SOPS, et OpenSSH.
+
+### Configuration Docker
+
+```yaml
+services:
+  sops-gitops-ui:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - APP_API_KEY=TokenSuperSecurise!    # Optionnel : protège les routes POST
+      - PROJECTS_DIR=/projets              # Dossier contenant global/ + projets
+    volumes:
+      - /home/sofiane/.config/sops/age/keys.txt:/root/.config/sops/age/keys.txt:ro
+      - /home/sofiane/.ssh/id_rsa:/root/.ssh/id_rsa:ro
+      - /home/sofiane/docker-apps:/projets
+    restart: unless-stopped
+```
+
+Les volumes montent :
+1. **Clé Age SOPS** : nécessaire pour déchiffrer/chiffrer les secrets (fichier texte, à ne jamais commit).
+2. **Clé SSH Git** : pour push les secrets chiffrés vers GitHub/GitLab.
+3. **Dossier des projets** : ton dépôt Git contenant la structure `PROJECTS_DIR`.
+
+### Lancer en Docker
+
+```bash
+docker-compose up -d --build
+# Accéder à http://localhost:3000
+```
+
+---
+
+## API Endpoints
+
+| Méthode | Route | Description | Auth |
+|---------|-------|-------------|------|
+| `GET` | `/api/projects` | Liste tous les projets (dossiers dans `PROJECTS_DIR`) | — |
+| `GET` | `/api/secrets/:project` | Déchiffre les secrets d'un projet | — |
+| `POST` | `/api/secrets/:project` | Chiffre et sauvegarde les secrets d'un projet | API Key |
+| `POST` | `/api/inject/:project` | Fusionne global + local, lit `.env.template`, génère `.env` | API Key |
+| `GET` | `/api/git/status` | État Git du dossier `PROJECTS_DIR` | — |
+| `POST` | `/api/git/sync` | `git add . && git commit && git push` | API Key |
+
+---
+
+## Générer une clé Age (SOPS)
+
+Si tu n'as pas encore de clé Age pour SOPS :
+
+```bash
+# Installer SOPS
+brew install sops
+
+# Générer une clé Age
+age-keygen -o ~/.config/sops/age/keys.txt
+```
+
+La clé publique s'affiche. Ajoute-la dans ton `.sops.yaml` à la racine de ton repo :
+
+```yaml
+creation_rules:
+  - age: <TA_CLE_PUBLIQUE>
+```
+
+---
+
+## Tests
+
+```bash
+# Backend (bun test)
+cd backend && bun test
+
+# Frontend (vitest)
+cd frontend && npm run test
+
+# End-to-end (Playwright — nécessite frontend + backend lancés)
+cd e2e && npx playwright test
+```
+
+---
+
+## Stack Technique
+
+| Couche | Technologie |
+|--------|------------|
+| Frontend | Vite + React (JSX) |
+| Backend | Bun + Express (TypeScript) |
+| Chiffrement | SOPS (Age) |
+| Git | simple-git |
+| Déploiement | Docker (multi-stage) |
+| Tests | bun test, Vitest, Playwright |

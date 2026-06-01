@@ -10,8 +10,7 @@ services:
     environment:
       - APP_API_KEY=TokenSuperSecurise!
       - SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
-      # Target file can be customized here or mounted
-      - TARGET_FILE=/projets/secrets.json 
+      - PROJECTS_DIR=/projets 
     volumes:
       # 1. Clé Rage (SOPS) pour le déchiffrement
       - /home/sofiane/.config/sops/age/keys.txt:/root/.config/sops/age/keys.txt:ro
