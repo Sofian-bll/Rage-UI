@@ -3,754 +3,280 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rage UI — Local-first secrets dashboard and GitOps .env injector</title>
+  <title>Rage UI — Secrets without copy paste drift</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#080708',
+            text: '#f5f2eb',
+            muted: 'rgba(245,242,235,0.58)',
+            peach: '#ffc799',
+            pink: '#ff5e8a',
+            purple: '#bf5af2',
+          },
+          backgroundImage: {
+            'brand-gradient': 'linear-gradient(135deg, #ffc799, #ff5e8a)',
+          }
+        }
+      }
+    }
+  </script>
   <style>
     :root {
-      --bg: #080708;
       --peach: #ffc799;
       --pink: #ff5e8a;
-      --purple: #bf5af2;
+      --bg: #080708;
       --text: #f5f2eb;
-      --muted: rgba(245,242,235,0.58);
-      --surface: rgba(255,255,255,0.06) ;
-      --line: rgba(255,255,255,0.10) ;
-      --gradient: linear-gradient(135deg, #ffc799, #ff5e8a);
     }
-
-    /* Reset & Base */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
     body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--bg);
-      background-image: 
-        radial-gradient(circle at 15% 15%, rgba(191, 90, 242, 0.08) 0%, transparent 50%),
-        radial-gradient(circle at 85% 75%, rgba(255, 94, 138, 0.08) 0%, transparent 50%);
-      background-attachment: fixed;
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      overflow-x: hidden;
     }
-
-    /* Typography */
-    h1, h2, h3 {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      text-transform: uppercase;
+    .headline {
+      font-family: -apple-system, "SF Compact Display", "Helvetica Neue", sans-serif;
       font-stretch: condensed;
-      font-weight: 800;
-      letter-spacing: -0.01em;
-      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
     }
-
-    p {
-      color: var(--muted);
-      font-size: 15px;
-    }
-
     code, pre {
-      font-family: "SF Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
-      font-size: 13px;
+      font-family: "SF Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     }
-
-    /* Utility Interactive */
-    *:focus-visible {
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .3; transform: scale(1.6); }
+    }
+    .pulse-dot {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all .6s ease-out;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .focus-ring:focus-visible {
       outline: 2px solid var(--peach);
       outline-offset: 4px;
     }
-
-    /* Layout Containers */
-    .container {
-      max-width: 1080px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
-
-    /* Navigation */
-    header {
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      background: rgba(8, 7, 8, 0.75);
-      border-bottom: 1px solid var(--line);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .nav-inner {
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .nav-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-decoration: none;
-      color: #fff;
-      font-weight: 700;
-      font-size: 16px;
-      letter-spacing: -0.01em;
-    }
-
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    /* Pills & Buttons */
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 12px;
-      color: var(--text);
-      text-decoration: none;
-      transition: background 0.2s ease-out, border-color 0.2s ease-out;
-    }
-
-    .pill:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(255, 255, 255, 0.18);
-    }
-
-    .pill-icon {
-      width: 14px;
-      height: 14px;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 999px;
-      padding: 12px 24px;
-      font-size: 14px;
-      font-weight: 500;
-      text-decoration: none;
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease-out;
-      cursor: pointer;
-    }
-
-    .btn:hover {
-      transform: scale(1.02);
-    }
-
-    .btn:active {
-      transform: scale(0.98);
-    }
-
-    .btn-gradient {
-      background: var(--gradient);
-      color: var(--bg);
-      border: none;
-      font-weight: 600;
-    }
-
-    .btn-gradient:hover {
-      box-shadow: 0 0 20px rgba(255, 94, 138, 0.3);
-    }
-
-    .btn-outline {
-      background: transparent;
-      border: 1px solid var(--line);
-      color: var(--text);
-    }
-
-    .btn-outline:hover {
-      background: var(--surface);
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-
-    /* Hero Section */
-    .hero {
-      padding: 96px 0 64px;
-      text-align: center;
-    }
-
-    .hero-logo-wrapper {
-      margin-bottom: 24px;
-      display: flex;
-      justify-content: center;
-    }
-
-    .logo-large {
-      width: 80px;
-      height: 80px;
-      filter: drop-shadow(0 4px 20px rgba(191, 90, 242, 0.15));
-    }
-
-    .eyebrow-badge {
-      display: inline-flex;
-      align-items: center;
-      background: rgba(191, 90, 242, 0.1);
-      border: 1px solid rgba(191, 90, 242, 0.2);
-      border-radius: 999px;
-      padding: 4px 12px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: var(--peach);
-      margin-bottom: 24px;
-    }
-
-    .pulse-dot {
-      display: inline-block;
-      width: 6px;
-      height: 6px;
-      background-color: var(--pink);
-      border-radius: 50%;
-      margin-right: 8px;
-      animation: pulse 2s infinite ease-in-out;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(0.85); opacity: 0.5; }
-      50% { transform: scale(1.15); opacity: 1; }
-      100% { transform: scale(0.85); opacity: 0.5; }
-    }
-
-    .hero-title {
-      font-size: clamp(32px, 6vw, 56px);
-      line-height: 1.05;
-      max-width: 800px;
-      margin: 0 auto 20px;
-    }
-
-    .hero-subtitle {
-      font-size: clamp(16px, 2.5vw, 19px);
-      color: var(--muted);
-      max-width: 600px;
-      margin: 0 auto 36px;
-    }
-
-    .hero-ctas {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      margin-bottom: 64px;
-      flex-wrap: wrap;
-    }
-
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-      padding: 40px 0;
-      margin-bottom: 40px;
-    }
-
-    .stat-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-
-    .stat-title {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--peach);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 6px;
-    }
-
-    .stat-desc {
-      font-size: 14px;
-      color: var(--muted);
-    }
-
-    .deploy-pills {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .deploy-label {
-      font-size: 11px;
-      font-weight: 500;
-      text-transform: uppercase;
-      color: var(--muted);
-      letter-spacing: 0.05em;
-    }
-
-    /* Section Headers */
-    .section-header {
-      text-align: center;
-      margin-bottom: 48px;
-    }
-
-    .section-header h2 {
-      font-size: clamp(24px, 4vw, 36px);
-      line-height: 1.1;
-      margin-bottom: 12px;
-    }
-
-    /* Features Grid */
-    .features {
-      padding: 80px 0;
-    }
-
-    .features-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 24px;
-    }
-
-    @media (min-width: 640px) {
-      .features-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 32px;
-      transition: border-color 0.2s ease-out, background 0.2s ease-out, transform 0.2s ease-out;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .card:hover {
-      border-color: var(--pink);
-      background: rgba(255, 255, 255, 0.08);
-      transform: translateY(-2px);
-    }
-
-    .card-icon {
-      color: var(--peach);
-      width: 28px;
-      height: 28px;
-    }
-
-    .card-title {
-      font-size: 18px;
-      color: #fff;
-    }
-
-    /* Quick Start & Terminals */
-    .quickstart {
-      padding: 80px 0;
-    }
-
-    .terminal-container {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 24px;
-    }
-
-    @media (min-width: 1024px) {
-      .terminal-container {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    .terminal-window {
-      background: #090808;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .terminal-header {
-      background: rgba(255, 255, 255, 0.03);
-      border-bottom: 1px solid var(--line);
-      height: 40px;
-      padding: 0 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .traffic-lights {
-      display: flex;
-      gap: 8px;
-    }
-
-    .light {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
-
-    .light-red { background: #ff5f56; }
-    .light-yellow { background: #ffbd2e; }
-    .light-green { background: #27c93f; }
-
-    .terminal-title {
-      font-size: 11px;
-      color: var(--muted);
-      font-family: "SF Mono", monospace;
-    }
-
-    .terminal-body {
-      padding: 20px;
-      position: relative;
-      overflow-x: auto;
-    }
-
-    .terminal-body pre {
-      color: var(--text);
-      line-height: 1.6;
-      white-space: pre;
-    }
-
-    .copy-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 4px 8px;
-      color: var(--text);
-      font-size: 11px;
-      font-family: inherit;
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.2s ease-out, background 0.1s;
-    }
-
-    .terminal-window:hover .copy-btn,
-    .terminal-window:focus-within .copy-btn {
-      opacity: 1;
-    }
-
-    .copy-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    .copy-btn.copied {
-      background: rgba(39, 201, 63, 0.2);
-      border-color: rgba(39, 201, 63, 0.4);
-      color: #27c93f;
-    }
-
-    /* Scroll Reveal Animation */
-    .reveal {
-      opacity: 0;
-      transform: translateY(16px);
-      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .reveal.active {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* Media query to disable animations for prefers-reduced-motion */
     @media (prefers-reduced-motion: reduce) {
-      .reveal {
-        opacity: 1 !important;
-        transform: none !important;
-        transition: none !important;
-      }
-      * {
+      .reveal, .pulse-dot {
         animation: none !important;
         transition: none !important;
+        opacity: 1 !important;
+        transform: none !important;
       }
     }
-
-    /* Footer Layout Fix */
-    footer {
-      border-top: 1px solid var(--line);
-      margin-top: 112px; /* Generous gap above the divider line */
+    .radial-gradient-1 {
+      background: radial-gradient(circle at 0% 0%, rgba(191, 90, 242, 0.12) 0%, transparent 50%);
     }
-
-    .footer-inner {
-      padding: 48px 24px; /* Distinct padding below the line, preventing overlap */
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 24px;
-    }
-
-    .footer-left {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    /* Text highlight */
-    .gradient-text {
-      background: var(--gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    .radial-gradient-2 {
+      background: radial-gradient(circle at 100% 100%, rgba(255, 199, 153, 0.12) 0%, transparent 50%);
     }
   </style>
 </head>
-<body>
+<body class="min-h-dvh flex flex-col bg-bg text-text antialiased relative overflow-x-hidden">
+  <div class="fixed inset-0 radial-gradient-1 pointer-events-none"></div>
+  <div class="fixed inset-0 radial-gradient-2 pointer-events-none"></div>
 
-  <!-- NAVIGATION -->
-  <header>
-    <div class="container nav-inner">
-      <a href="#" class="nav-brand" aria-label="Rage UI homepage">
-        <!-- SVG Shield R Monogram -->
-        <svg class="logo-svg" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#bf5af2" />
-              <stop offset="50%" stop-color="#ff5e8a" />
-              <stop offset="100%" stop-color="#ffc799" />
-            </linearGradient>
-          </defs>
-          <path d="M12 2.5 L4 5.5 V11.5 C4 16.8 7.4 20.8 12 21.5 C16.6 20.8 20 16.8 20 11.5 V5.5 L12 2.5 Z" stroke="url(#logoGrad)" stroke-width="2.2" stroke-linejoin="round" />
-          <path d="M9.5 8.5 H12.5 C13.6 8.5 14.5 9.1 14.5 10 C14.5 10.9 13.6 11.5 12.5 11.5 H9.5 V8.5 Z M9.5 11.5 H11 L13.5 15.5" stroke="url(#logoGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-        <span>Rage UI</span>
-      </a>
-      <div class="nav-actions">
-        <a href="https://github.com/Sofian-bll/Rage-UI" class="pill" target="_blank" rel="noopener">
-          <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M16 22.0268V19.1568C16.0375 18.68 15.9731 18.2006 15.811 17.7506C15.6489 17.3006 15.3929 16.8902 15.06 16.5468C18.2 16.1968 21.5 15.0068 21.5 9.54679C21.4997 8.15062 20.9627 6.80799 20 5.79679C20.4558 4.5753 20.4236 3.22514 19.91 2.02679C19.91 2.02679 18.73 1.67679 16 3.50679C13.708 2.88561 11.292 2.88561 8.99999 3.50679C6.26999 1.67679 5.08999 2.02679 5.08999 2.02679C4.57636 3.22514 4.54413 4.5753 4.99999 5.79679C4.03011 6.81549 3.49251 8.17026 3.49999 9.57679C3.49999 14.9968 6.79998 16.1868 9.93998 16.5768C9.61098 16.9168 9.35725 17.3222 9.19529 17.7667C9.03334 18.2112 8.96679 18.6849 8.99999 19.1568V22.0268" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M9 20.0267C6 20.9999 3.5 20.0267 2 17.0267" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span>Star</span>
+  <!-- NAV -->
+  <nav class="sticky top-0 z-50 w-full glass border-b border-white/5 py-4 px-6">
+    <div class="max-w-5xl mx-auto flex items-center gap-3">
+      <img src="input_file_0.jpeg" width="32" height="32" alt="Rage UI Logo" class="rounded-lg shadow-lg">
+      <span class="headline text-lg font-bold tracking-tight">Rage UI</span>
+      
+      <div class="ml-auto flex items-center gap-3">
+        <a href="https://github.com/Sofian-bll/Rage-UI" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 transition-colors px-3 py-1 rounded-full text-xs font-medium focus-ring">
+          <span class="w-4 h-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 22.0268V19.1568C16.0375 18.68 15.9731 18.2006 15.811 17.7506C15.6489 17.3006 15.3929 16.8902 15.06 16.5468C18.2 16.1968 21.5 15.0068 21.5 9.54679C21.4997 8.15062 20.9627 6.80799 20 5.79679C20.4558 4.5753 20.4236 3.22514 19.91 2.02679C19.91 2.02679 18.73 1.67679 16 3.50679C13.708 2.88561 11.292 2.88561 8.99999 3.50679C6.26999 1.67679 5.08999 2.02679 5.08999 2.02679C4.57636 3.22514 4.54413 4.5753 4.99999 5.79679C4.03011 6.81549 3.49251 8.17026 3.49999 9.57679C3.49999 14.9968 6.79998 16.1868 9.93998 16.5768C9.61098 16.9168 9.35725 17.3222 9.19529 17.7667C9.03334 18.2112 8.96679 18.6849 8.99999 19.1568V22.0268" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 20.0267C6 20.9999 3.5 20.0267 2 17.0267" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          GitHub
         </a>
-        <div class="pill">
-          <span>v1.0.0</span>
-        </div>
+        <span class="bg-purple/20 text-purple border border-purple/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">v1.0.0</span>
       </div>
     </div>
-  </header>
+  </nav>
 
-  <main>
-    <!-- HERO SECTION -->
-    <section class="hero container reveal">
-      <div class="hero-logo-wrapper">
-        <!-- Center-stage Large SVG Shield Logo -->
-        <svg class="logo-large" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="logoGradHero" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#bf5af2" />
-              <stop offset="50%" stop-color="#ff5e8a" />
-              <stop offset="100%" stop-color="#ffc799" />
-            </linearGradient>
-          </defs>
-          <path d="M12 2.5 L4 5.5 V11.5 C4 16.8 7.4 20.8 12 21.5 C16.6 20.8 20 16.8 20 11.5 V5.5 L12 2.5 Z" stroke="url(#logoGradHero)" stroke-width="2" stroke-linejoin="round" />
-          <path d="M9.5 8.5 H12.5 C13.6 8.5 14.5 9.1 14.5 10 C14.5 10.9 13.6 11.5 12.5 11.5 H9.5 V8.5 Z M9.5 11.5 H11 L13.5 15.5" stroke="url(#logoGradHero)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-      </div>
-
-      <div class="eyebrow-badge">
-        <span class="pulse-dot"></span>
-        <span>local-first · SOPS · GitOps</span>
-      </div>
-
-      <h1 class="hero-title">Secrets without <br><span class="gradient-text">copy paste drift.</span></h1>
-      <p class="hero-subtitle">
-        A React-based developer dashboard tailored for securely managing encrypted secrets, templating configurations, and syncing safely via git.
-      </p>
-
-      <div class="hero-ctas">
-        <a href="#quickstart" class="btn btn-gradient">Run locally</a>
-        <a href="https://github.com/Sofian-bll/Rage-UI" class="btn btn-outline" target="_blank" rel="noopener">
-          View repository
-        </a>
-      </div>
-
-      <!-- Stats Grid -->
-      <div class="stats-row">
-        <div class="stat-item">
-          <span class="stat-title">Encrypted</span>
-          <span class="stat-desc">SOPS and Age at rest</span>
+  <main class="flex-1">
+    <div class="max-w-5xl mx-auto px-6 py-20 flex flex-col gap-24">
+      
+      <!-- HERO -->
+      <section class="text-center flex flex-col items-center reveal">
+        <div class="flex items-center gap-2 text-muted uppercase tracking-[0.2em] text-[10px] font-bold mb-6">
+          <span class="w-1.5 h-1.5 bg-peach rounded-full pulse-dot"></span>
+          local-first · SOPS · GitOps
         </div>
-        <div class="stat-item">
-          <span class="stat-title">Git-backed</span>
-          <span class="stat-desc">Sync encrypted files only</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-title">Homelab-ready</span>
-          <span class="stat-desc">Single Docker service</span>
-        </div>
-      </div>
-
-      <!-- Deploy Pills -->
-      <div class="deploy-pills">
-        <span class="deploy-label">Integrates with:</span>
-        <div class="pill">Docker</div>
-        <div class="pill">React 19</div>
-        <div class="pill">Bun + Express</div>
-        <div class="pill">Playwright</div>
-      </div>
-    </section>
-
-    <!-- FEATURES SECTION -->
-    <section class="features container">
-      <div class="section-header reveal">
-        <h2>A tiny vault for project fleets.</h2>
-        <p>Keep secrets secure and environments in sync without cloud dependencies.</p>
-      </div>
-
-      <div class="features-grid">
-        <!-- Card 1 -->
-        <div class="card reveal">
-          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M5 21V5C5 3.89543 5.89543 3 7 3H17C18.1046 3 19 3.89543 19 5V21L13.0815 17.1953C12.4227 16.7717 11.5773 16.7717 10.9185 17.1953L5 21Z" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <h3 class="card-title">Encrypted vault</h3>
-          <p>Each project manages its own <code>secrets.enc.json</code>. Built on trusted industry standards, secrets stay encrypted at rest via SOPS and Age.</p>
+        <h1 class="headline text-5xl md:text-7xl font-bold leading-[0.95] mb-8 max-w-3xl">
+          Secrets without<br>copy paste drift.
+        </h1>
+        <p class="text-muted text-lg md:text-xl max-w-2xl leading-relaxed mb-10">
+          Rage UI gives personal infrastructure a visual control plane — edit encrypted secrets, reuse global values, inject .env files from templates, and sync through Git.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 mb-16">
+          <a href="https://github.com/Sofian-bll/Rage-UI" class="bg-brand-gradient text-bg font-bold px-8 py-3 rounded-full hover:opacity-90 transition-opacity focus-ring">
+            View repository
+          </a>
+          <a href="#quickstart" class="border border-white/10 hover:bg-white/5 text-text font-bold px-8 py-3 rounded-full transition-colors focus-ring">
+            Run locally
+          </a>
         </div>
 
-        <!-- Card 2 -->
-        <div class="card reveal">
-          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M6 18.01L6.01 17.9989" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M6 6.01L6.01 5.99889" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M2 9.4V2.6C2 2.26863 2.26863 2 2.6 2H21.4C21.7314 2 22 2.26863 22 2.6V9.4C22 9.73137 21.7314 10 21.4 10H2.6C2.26863 10 2 9.73137 2 9.4Z" stroke-width="1.5"/>
-            <path d="M2 21.4V14.6C2 14.2686 2.26863 14 2.6 14H21.4C21.7314 14 22 14.2686 22 14.6V21.4C22 21.7314 21.7314 22 21.4 22H2.6C2.26863 22 2 21.7314 2 21.4Z" stroke-width="1.5"/>
-          </svg>
-          <h3 class="card-title">Global secret reuse</h3>
-          <p>Avoid duplicating critical variables. Define shared global tokens in a central namespace and safely reference them across your configurations.</p>
-        </div>
-
-        <!-- Card 3 -->
-        <div class="card reveal">
-          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M10 17L9.33334 17C8.22877 17 7.33334 16.1047 7.33334 15.0002C7.33334 14.3284 7.33334 13.6211 7.33333 13.1111C7.33333 12.5556 6 12 6 12C6 12 7.33333 11.4444 7.33334 10.8889C7.33334 10.4359 7.33334 9.70586 7.33334 8.99998C7.33334 7.89541 8.22877 7 9.33334 7L10 7" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M14 17L14.6667 17C15.7712 17 16.6667 16.1047 16.6667 15.0002C16.6667 14.3284 16.6667 13.6211 16.6667 13.1111C16.6667 12.5556 18 12 18 12C18 12 16.6667 11.4444 16.6667 10.8889C16.6667 10.4359 16.6667 9.70586 16.6667 8.99998C16.6667 7.89541 15.7712 7 14.6667 7L14 7" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M21 3.6V20.4C21 20.7314 20.7314 21 20.4 21H3.6C3.26863 21 3 20.7314 3 20.4V3.6C3 3.26863 3.26863 3 3.6 3H20.4C20.7314 3 21 3.26863 21 3.6Z" stroke-width="1.5"/>
-          </svg>
-          <h3 class="card-title">Template injection</h3>
-          <p>Feed placeholders like <code>{{GLOBAL.KEY}}</code> into your local <code>.env.template</code> files. Generate fresh environment files in a single click.</p>
-        </div>
-
-        <!-- Card 4 -->
-        <div class="card reveal">
-          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M16 22.0268V19.1568C16.0375 18.68 15.9731 18.2006 15.811 17.7506C15.6489 17.3006 15.3929 16.8902 15.06 16.5468C18.2 16.1968 21.5 15.0068 21.5 9.54679C21.4997 8.15062 20.9627 6.80799 20 5.79679C20.4558 4.5753 20.4236 3.22514 19.91 2.02679C19.91 2.02679 18.73 1.67679 16 3.50679C13.708 2.88561 11.292 2.88561 8.99999 3.50679C6.26999 1.67679 5.08999 2.02679 5.08999 2.02679C4.57636 3.22514 4.54413 4.5753 4.99999 5.79679C4.03011 6.81549 3.49251 8.17026 3.49999 9.57679C3.49999 14.9968 6.79998 16.1868 9.93998 16.5768C9.61098 16.9168 9.35725 17.3222 9.19529 17.7667C9.03334 18.2112 8.96679 18.6849 8.99999 19.1568V22.0268" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M9 20.0267C6 20.9999 3.5 20.0267 2 17.0267" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <h3 class="card-title">GitOps from the UI</h3>
-          <p>Native integration right within the system. Check repository status, review encrypted changes, and stage, commit, or push directly to git.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- QUICK START SECTION -->
-    <section class="quickstart container" id="quickstart">
-      <div class="section-header reveal">
-        <h2>Run the console locally.</h2>
-        <p>A few simple steps to get you up and running with Rage UI.</p>
-      </div>
-
-      <div class="terminal-container reveal">
-        <!-- Setup Terminal -->
-        <div class="terminal-window">
-          <div class="terminal-header">
-            <div class="traffic-lights">
-              <span class="light light-red"></span>
-              <span class="light light-yellow"></span>
-              <span class="light light-green"></span>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-left w-full border-t border-white/5 pt-12">
+          <div>
+            <div class="flex items-center gap-2 font-bold mb-2 uppercase text-sm tracking-tight">
+              <span class="w-4 h-4 text-peach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 21V5C5 3.89543 5.89543 3 7 3H17C18.1046 3 19 3.89543 19 5V21L13.0815 17.1953C12.4227 16.7717 11.5773 16.7717 10.9185 17.1953L5 21Z" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              Encrypted
             </div>
-            <span class="terminal-title">setup.sh</span>
+            <p class="text-muted text-sm leading-relaxed">SOPS and Age at rest. Your machine, your keys.</p>
           </div>
-          <div class="terminal-body">
-            <button class="copy-btn" aria-label="Copy code">Copy</button>
-            <pre><code>git clone https://github.com/Sofian-bll/Rage-UI.git
+          <div>
+            <div class="flex items-center gap-2 font-bold mb-2 uppercase text-sm tracking-tight">
+              <span class="w-4 h-4 text-pink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 22.0268V19.1568C16.0375 18.68 15.9731 18.2006 15.811 17.7506C15.6489 17.3006 15.3929 16.8902 15.06 16.5468C18.2 16.1968 21.5 15.0068 21.5 9.54679C21.4997 8.15062 20.9627 6.80799 20 5.79679C20.4558 4.5753 20.4236 3.22514 19.91 2.02679C19.91 2.02679 18.73 1.67679 16 3.50679C13.708 2.88561 11.292 2.88561 8.99999 3.50679C6.26999 1.67679 5.08999 2.02679 5.08999 2.02679C4.57636 3.22514 4.54413 4.5753 4.99999 5.79679C4.03011 6.81549 3.49251 8.17026 3.49999 9.57679C3.49999 14.9968 6.79998 16.1868 9.93998 16.5768C9.61098 16.9168 9.35725 17.3222 9.19529 17.7667C9.03334 18.2112 8.96679 18.6849 8.99999 19.1568V22.0268" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 20.0267C6 20.9999 3.5 20.0267 2 17.0267" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              Git-backed
+            </div>
+            <p class="text-muted text-sm leading-relaxed">Sync encrypted files only. UI handles the lifecycle.</p>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 font-bold mb-2 uppercase text-sm tracking-tight">
+              <span class="w-4 h-4 text-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 18.01L6.01 17.9989" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 6.01L6.01 5.99889" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 9.4V2.6C2 2.26863 2.26863 2 2.6 2H21.4C21.7314 2 22 2.26863 22 2.6V9.4C22 9.73137 21.7314 10 21.4 10H2.6C2.26863 10 2 9.73137 2 9.4Z" stroke-width="1.5"/><path d="M2 21.4V14.6C2 14.2686 2.26863 14 2.6 14H21.4C21.7314 14 22 21.7314 22 21.4V21.4C22 21.7314 21.7314 22 21.4 22H2.6C2.26863 22 2 21.7314 2 21.4Z" stroke-width="1.5"/></svg></span>
+              Homelab-ready
+            </div>
+            <p class="text-muted text-sm leading-relaxed">Single Docker service. Minimal footprint, high utility.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-4 mt-8 opacity-40 hover:opacity-100 transition-opacity">
+          <span class="text-[10px] font-mono border border-white/20 px-2 py-1 rounded tracking-tighter uppercase">Docker</span>
+          <span class="text-[10px] font-mono border border-white/20 px-2 py-1 rounded tracking-tighter uppercase">Express API</span>
+        </div>
+      </section>
+
+      <!-- FEATURES -->
+      <section class="reveal">
+        <h2 class="headline text-3xl font-bold mb-8">A tiny vault for project fleets.</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="glass p-8 rounded-2xl flex flex-col gap-4">
+            <div class="w-10 h-10 rounded-xl bg-peach/10 text-peach flex items-center justify-center">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 21V5C5 3.89543 5.89543 3 7 3H17C18.1046 3 19 3.89543 19 5V21L13.0815 17.1953C12.4227 16.7717 11.5773 16.7717 10.9185 17.1953L5 21Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3 class="font-bold text-lg">Encrypted vault</h3>
+            <p class="text-muted text-sm leading-relaxed">Each project maintains its own <code>secrets.enc.json</code>. SOPS/Age ensures data is only readable by those with the master key.</p>
+          </div>
+          <div class="glass p-8 rounded-2xl flex flex-col gap-4">
+            <div class="w-10 h-10 rounded-xl bg-pink/10 text-pink flex items-center justify-center">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 3.6V20.4C21 20.7314 20.7314 21 20.4 21H3.6C3.26863 21 3 20.7314 3 20.4V3.6C3 3.26863 3.26863 3 3.6 3H20.4C20.7314 3 21 3.26863 21 3.6Z" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 17L9.33334 17C8.22877 17 7.33334 16.1047 7.33334 15.0002C7.33334 14.3284 7.33334 13.6211 7.33333 13.1111C7.33333 12.5556 6 12 6 12C6 12 7.33333 11.4444 7.33334 10.8889C7.33334 10.4359 7.33334 9.70586 7.33334 8.99998C7.33334 7.89541 8.22877 7 9.33334 7L10 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3 class="font-bold text-lg">Global secret reuse</h3>
+            <p class="text-muted text-sm leading-relaxed">Centralize shared tokens in <code>global/</code>. Reference them from any project to eliminate duplication and update errors.</p>
+          </div>
+          <div class="glass p-8 rounded-2xl flex flex-col gap-4">
+            <div class="w-10 h-10 rounded-xl bg-purple/10 text-purple flex items-center justify-center">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 18.01L6.01 17.9989" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 9.4V2.6C2 2.26863 2.26863 2 2.6 2H21.4C21.7314 2 22 2.26863 22 2.6V9.4C22 9.73137 21.7314 10 21.4 10H2.6C2.26863 10 2 9.73137 2 9.4Z" stroke-width="1.5"/></svg>
+            </div>
+            <h3 class="font-bold text-lg">Template injection</h3>
+            <p class="text-muted text-sm leading-relaxed">Define <code>.env.template</code> with placeholders. One click merges global and local values into a ready-to-use <code>.env</code> file.</p>
+          </div>
+          <div class="glass p-8 rounded-2xl flex flex-col gap-4">
+            <div class="w-10 h-10 rounded-xl bg-peach/10 text-peach flex items-center justify-center">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 22.0268V19.1568C16.0375 18.68 15.9731 18.2006 15.811 17.7506C15.6489 17.3006 15.3929 16.8902 15.06 16.5468C18.2 16.1968 21.5 15.0068 21.5 9.54679C21.4997 8.15062 20.9627 6.80799 20 5.79679C20.4558 4.5753 20.4236 3.22514 19.91 2.02679C19.91 2.02679 18.73 1.67679 16 3.50679C13.708 2.88561 11.292 2.88561 8.99999 3.50679C6.26999 1.67679 5.08999 2.02679 5.08999 2.02679C4.57636 3.22514 4.54413 4.5753 4.99999 5.79679" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3 class="font-bold text-lg">GitOps from the UI</h3>
+            <p class="text-muted text-sm leading-relaxed">Check repository status, view diffs, commit changes, and push updates directly from the dashboard. Seamless version control.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- QUICK START -->
+      <section id="quickstart" class="reveal">
+        <h2 class="headline text-3xl font-bold mb-8">Run the console locally.</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- PANEL LEFT -->
+          <div class="group relative bg-[#090808] border border-white/10 rounded-xl overflow-hidden">
+            <div class="flex items-center gap-1.5 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+              <div class="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+              <div class="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+              <div class="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+              <span class="text-[10px] text-muted ml-2 font-mono uppercase">Setup</span>
+              <button onclick="copy('setup-cmd')" class="ml-auto opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity p-1 hover:text-peach" title="Copy to clipboard">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+            <pre id="setup-cmd" class="p-6 text-sm text-peach/90 leading-relaxed overflow-x-auto"><code>git clone https://github.com/Sofian-bll/Rage-UI.git
 cd Rage-UI/backend && bun install && bun run server.ts
-cd Rage-UI/frontend && npm install && npm run dev</code></pre>
+cd ../frontend && npm install && npm run dev</code></pre>
           </div>
-        </div>
-
-        <!-- Template Terminal -->
-        <div class="terminal-window">
-          <div class="terminal-header">
-            <div class="traffic-lights">
-              <span class="light light-red"></span>
-              <span class="light light-yellow"></span>
-              <span class="light light-green"></span>
+          <!-- PANEL RIGHT -->
+          <div class="group relative bg-[#090808] border border-white/10 rounded-xl overflow-hidden">
+            <div class="flex items-center gap-1.5 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+              <div class="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+              <div class="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+              <div class="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+              <span class="text-[10px] text-muted ml-2 font-mono uppercase">Injection Logic</span>
             </div>
-            <span class="terminal-title">env-merger-output</span>
-          </div>
-          <div class="terminal-body">
-            <button class="copy-btn" aria-label="Copy code">Copy</button>
-            <pre><code># .env.template
-DB_URL=postgresql://{{GLOBAL.DB_USER}}:{{DB_PASS}}@localhost:5432
-API_KEY={{GLOBAL.API_TOKEN}}
-
-# Generated .env (After UI Injection)
-DB_URL=postgresql://admin:supersecret123@localhost:5432
-API_KEY=rage_tok_99d14a5b</code></pre>
+            <div class="p-6 text-[13px] font-mono leading-tight">
+              <div class="text-muted mb-2"># .env.template</div>
+              <div class="text-text mb-4">DB_URL=postgres://{{GLOBAL.USER}}@{{HOST}}</div>
+              <div class="text-muted mb-2"># Generated .env</div>
+              <div class="text-pink">DB_URL=postgres://admin@localhost</div>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+    </div>
   </main>
 
   <!-- FOOTER -->
-  <footer>
-    <div class="container footer-inner">
-      <div class="footer-left">
-        &copy; 2026 Rage UI. Released under the <span class="gradient-text">MIT License</span>.
+  <footer class="border-t border-white/5 py-10 px-6 mt-12">
+    <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <div class="text-muted text-sm font-medium">
+        &copy; 2026 Rage UI. <span class="mx-2">·</span> MIT License
       </div>
-      <a href="https://github.com/Sofian-bll/Rage-UI" class="pill" target="_blank" rel="noopener">
-        <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M16 22.0268V19.1568C16.0375 18.68 15.9731 18.2006 15.811 17.7506C15.6489 17.3006 15.3929 16.8902 15.06 16.5468C18.2 16.1968 21.5 15.0068 21.5 9.54679C21.4997 8.15062 20.9627 6.80799 20 5.79679C20.4558 4.5753 20.4236 3.22514 19.91 2.02679C19.91 2.02679 18.73 1.67679 16 3.50679C13.708 2.88561 11.292 2.88561 8.99999 3.50679C6.26999 1.67679 5.08999 2.02679 5.08999 2.02679C4.57636 3.22514 4.54413 4.5753 4.99999 5.79679C4.03011 6.81549 3.49251 8.17026 3.49999 9.57679C3.49999 14.9968 6.79998 16.1868 9.93998 16.5768C9.61098 16.9168 9.35725 17.3222 9.19529 17.7667C9.03334 18.2112 8.96679 18.6849 8.99999 19.1568V22.0268" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M9 20.0267C6 20.9999 3.5 20.0267 2 17.0267" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span>GitHub</span>
+      <a href="https://github.com/Sofian-bll/Rage-UI" class="flex items-center gap-2 bg-white/5 hover:bg-white/10 transition-colors px-4 py-2 rounded-full text-xs font-medium focus-ring">
+        <span class="w-4 h-4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 22.0268V19.1568C16.0375 18.68 15.9731 18.2006 15.811 17.7506C15.6489 17.3006 15.3929 16.8902 15.06 16.5468C18.2 16.1968 21.5 15.0068 21.5 9.54679C21.4997 8.15062 20.9627 6.80799 20 5.79679C20.4558 4.5753 20.4236 3.22514 19.91 2.02679C19.91 2.02679 18.73 1.67679 16 3.50679C13.708 2.88561 11.292 2.88561 8.99999 3.50679C6.26999 1.67679 5.08999 2.02679 5.08999 2.02679C4.57636 3.22514 4.54413 4.5753 4.99999 5.79679C4.03011 6.81549 3.49251 8.17026 3.49999 9.57679" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        GitHub Repository
       </a>
     </div>
   </footer>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // Intersection Observer for Scroll Reveal
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('active');
-          }
-        });
-      }, { threshold: 0.05 });
-      document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-      // Terminal copy functionality
-      document.querySelectorAll('.copy-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const pre = btn.nextElementSibling;
-          if (pre && pre.tagName === 'PRE') {
-            try {
-              await navigator.clipboard.writeText(pre.textContent.trim());
-              const original = btn.textContent;
-              btn.textContent = '✓ Copied';
-              btn.classList.add('copied');
-              setTimeout(() => {
-                btn.textContent = original;
-                btn.classList.remove('copied');
-              }, 1500);
-            } catch (err) {
-              console.error('Failed to copy', err);
-            }
-          }
-        });
+    // Micro-interactions and reveals
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
       });
-    });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    async function copy(id) {
+      const text = document.getElementById(id).innerText;
+      try {
+        await navigator.clipboard.writeText(text);
+        const btn = event.currentTarget;
+        const original = btn.innerHTML;
+        btn.innerHTML = '<svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+        setTimeout(() => btn.innerHTML = original, 2000);
+      } catch (err) {
+        console.error('Failed to copy');
+      }
+    }
   </script>
 </body>
 </html>
