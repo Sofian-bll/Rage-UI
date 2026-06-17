@@ -6,6 +6,6 @@ test('capture landing page screenshot', async ({ page }) => {
   await page.waitForTimeout(1500);
   await page.screenshot({
     path: '../docs/assets/screenshot.png',
-    fullPage: true,
+    clip: { x: 0, y: 0, width: 1920, height: 1080 },
   });
 });
