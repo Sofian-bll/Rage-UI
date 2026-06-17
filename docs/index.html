@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Rage UI is a local-first secrets manager and GitOps .env injector for homelab and personal projects.">
+    <title>Rage UI - Local-first secrets manager</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #080708;
+        --bg-2: #120d14;
+        --surface: rgba(255, 255, 255, 0.065);
+        --surface-strong: rgba(255, 255, 255, 0.105);
+        --text: #fff7ef;
+        --muted: rgba(255, 247, 239, 0.66);
+        --faint: rgba(255, 247, 239, 0.38);
+        --line: rgba(255, 255, 255, 0.12);
+        --peach: #ffc799;
+        --pink: #ff5e8a;
+        --purple: #bf5af2;
+        --shadow: 0 24px 90px rgba(0, 0, 0, 0.45);
+        --display: "Arial Narrow", "Aptos Display", "Helvetica Neue", system-ui, sans-serif;
+        --body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: var(--body);
+        background:
+          radial-gradient(circle at 12% 12%, rgba(255, 94, 138, 0.18), transparent 28rem),
+          radial-gradient(circle at 86% 16%, rgba(191, 90, 242, 0.18), transparent 30rem),
+          radial-gradient(circle at 52% 92%, rgba(255, 199, 153, 0.12), transparent 28rem),
+          linear-gradient(180deg, var(--bg), #0c0908 62%, #060505);
+        color: var(--text);
+      }
+      a { color: inherit; text-decoration: none; }
+      .page {
+        width: min(1180px, calc(100% - 36px));
+        margin: 0 auto;
+      }
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 22px 0;
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+      }
+      .brand img { width: 38px; height: 38px; }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .nav-links a,
+      .button {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 10px 14px;
+        background: rgba(255, 255, 255, 0.035);
+      }
+      .button.primary {
+        color: #130b10;
+        border-color: transparent;
+        background: linear-gradient(135deg, var(--peach), var(--pink));
+        font-weight: 800;
+      }
+      .nav-links a:focus-visible,
+      .button:focus-visible {
+        outline: 2px solid var(--peach);
+        outline-offset: 4px;
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 0.92fr) minmax(420px, 1.08fr);
+        gap: 38px;
+        align-items: center;
+        min-height: calc(100vh - 92px);
+        padding: 42px 0 72px;
+      }
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        width: fit-content;
+        margin-bottom: 18px;
+        border: 1px solid rgba(255,199,153,0.26);
+        border-radius: 999px;
+        padding: 7px 11px;
+        color: var(--peach);
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.02em;
+      }
+      .pulse {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--peach);
+        box-shadow: 0 0 0 0 rgba(255,199,153,0.6);
+        animation: pulse 2.4s infinite;
+      }
+      h1, h2, h3 { margin: 0; }
+      h1 {
+        max-width: 680px;
+        font-family: var(--display);
+        font-size: clamp(56px, 8.8vw, 132px);
+        line-height: 0.82;
+        letter-spacing: -0.09em;
+        text-transform: uppercase;
+      }
+      h1 span {
+        display: block;
+        color: transparent;
+        -webkit-text-stroke: 1px rgba(255,247,239,0.54);
+        text-shadow: none;
+      }
+      .hero-copy p {
+        max-width: 640px;
+        margin: 24px 0 0;
+        color: var(--muted);
+        font-size: clamp(17px, 2vw, 21px);
+        line-height: 1.65;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 30px;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 34px;
+      }
+      .stat {
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 14px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .stat b {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--peach);
+        font-family: var(--mono);
+        font-size: 13px;
+      }
+      .stat span { color: var(--muted); font-size: 13px; }
+      .manifold {
+        position: relative;
+        min-height: 620px;
+        border: 1px solid var(--line);
+        border-radius: 34px;
+        padding: 20px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.026)),
+          radial-gradient(circle at 50% 45%, rgba(255,199,153,0.18), transparent 18rem);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .manifold::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+        background-size: 28px 28px;
+        mask-image: radial-gradient(circle at 50% 48%, black, transparent 74%);
+        pointer-events: none;
+      }
+      .panel {
+        position: absolute;
+        z-index: 1;
+        width: min(250px, 44%);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 14px;
+        background: rgba(8, 7, 8, 0.72);
+        backdrop-filter: blur(18px);
+      }
+      .panel.global { left: 22px; top: 70px; }
+      .panel.project { left: 22px; bottom: 84px; }
+      .panel.env { right: 22px; top: 172px; }
+      .label {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 12px;
+        color: var(--peach);
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      code, pre { font-family: var(--mono); }
+      pre {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.7;
+        white-space: pre-wrap;
+      }
+      .redact {
+        display: inline-block;
+        width: 72px;
+        height: 0.85em;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--pink), var(--purple));
+        vertical-align: -0.12em;
+      }
+      .junction {
+        position: absolute;
+        z-index: 2;
+        left: 50%;
+        top: 50%;
+        display: grid;
+        place-items: center;
+        width: 150px;
+        height: 150px;
+        transform: translate(-50%, -50%);
+        border: 1px solid rgba(255,199,153,0.28);
+        border-radius: 34px;
+        background: rgba(10, 9, 8, 0.86);
+        box-shadow: 0 0 90px rgba(255, 94, 138, 0.22);
+      }
+      .junction img { width: 92px; height: 92px; }
+      .line {
+        position: absolute;
+        z-index: 0;
+        height: 2px;
+        transform-origin: left center;
+        background: linear-gradient(90deg, transparent, var(--pink), var(--peach), transparent);
+        opacity: 0.78;
+      }
+      .line.a { left: 242px; top: 170px; width: 230px; transform: rotate(22deg); }
+      .line.b { left: 240px; bottom: 170px; width: 240px; transform: rotate(-24deg); }
+      .line.c { right: 224px; top: 300px; width: 190px; }
+      .command {
+        position: absolute;
+        left: 22px;
+        right: 22px;
+        bottom: 20px;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 13px 14px;
+        color: var(--muted);
+        background: rgba(0,0,0,0.34);
+        font-family: var(--mono);
+        font-size: 13px;
+      }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--peach); }
+      section { padding: 72px 0; }
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 22px;
+      }
+      h2 {
+        max-width: 700px;
+        font-family: var(--display);
+        font-size: clamp(34px, 5vw, 70px);
+        line-height: 0.92;
+        letter-spacing: -0.07em;
+        text-transform: uppercase;
+      }
+      .section-head p { max-width: 430px; margin: 0; color: var(--muted); line-height: 1.6; }
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .feature {
+        min-height: 220px;
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        padding: 20px;
+        background: var(--surface);
+      }
+      .feature .num { color: var(--peach); font-family: var(--mono); font-size: 12px; }
+      .feature h3 { margin-top: 32px; font-size: 19px; letter-spacing: -0.04em; }
+      .feature p { color: var(--muted); line-height: 1.6; }
+      .quickstart {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        gap: 16px;
+      }
+      .terminal {
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        overflow: hidden;
+        background: #090808;
+        box-shadow: var(--shadow);
+      }
+      .term-bar {
+        display: flex;
+        gap: 7px;
+        padding: 14px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255,255,255,0.04);
+      }
+      .term-bar span { width: 11px; height: 11px; border-radius: 50%; background: var(--faint); }
+      .term-bar span:nth-child(1) { background: var(--pink); }
+      .term-bar span:nth-child(2) { background: var(--peach); }
+      .term-bar span:nth-child(3) { background: #99ffe4; }
+      .terminal pre { padding: 20px; font-size: 14px; }
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 34px 0 46px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      @keyframes pulse {
+        70% { box-shadow: 0 0 0 14px rgba(255,199,153,0); }
+        100% { box-shadow: 0 0 0 0 rgba(255,199,153,0); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        .pulse { animation: none; }
+      }
+      @media (max-width: 980px) {
+        .hero, .quickstart { grid-template-columns: 1fr; min-height: auto; }
+        .manifold { min-height: 560px; }
+        .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+      @media (max-width: 640px) {
+        .page { width: min(100% - 24px, 1180px); }
+        .nav { align-items: flex-start; flex-direction: column; }
+        .nav-links { flex-wrap: wrap; }
+        .hero { padding-top: 18px; }
+        .stats, .feature-grid { grid-template-columns: 1fr; }
+        .manifold { min-height: 760px; padding: 14px; }
+        .panel { position: relative; inset: auto !important; width: 100%; margin-bottom: 14px; }
+        .junction { position: relative; left: auto; top: auto; transform: none; margin: 18px auto; }
+        .line { display: none; }
+        .command { position: relative; left: auto; right: auto; bottom: auto; margin-top: 14px; align-items: flex-start; }
+        .section-head { display: block; }
+        .section-head p { margin-top: 14px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <nav class="nav" aria-label="Primary navigation">
+        <a class="brand" href="#top" aria-label="Rage UI home">
+          <img src="logo.svg" alt="Rage UI logo">
+          <span>Rage UI</span>
+        </a>
+        <div class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#quickstart">Quick start</a>
+          <a href="https://github.com/Sofian-bll/Rage-UI#readme">README</a>
+          <a href="https://github.com/Sofian-bll/Rage-UI">GitHub</a>
+        </div>
+      </nav>
+      <main id="top">
+        <section class="hero" aria-labelledby="hero-title">
+          <div class="hero-copy">
+            <div class="eyebrow"><span class="pulse"></span> local-first / SOPS / GitOps</div>
+            <h1 id="hero-title">Secrets without <span>copy paste drift.</span></h1>
+            <p>Rage UI gives personal infrastructure a small control plane: edit encrypted project secrets, reuse global values, inject `.env` files from templates, and sync only encrypted state through Git.</p>
+            <div class="actions">
+              <a class="button primary" href="https://github.com/Sofian-bll/Rage-UI">View repository</a>
+              <a class="button" href="#quickstart">Run locally</a>
+              <a class="button" href="https://github.com/Sofian-bll/Rage-UI/blob/main/README.fr.md">Lire en francais</a>
+            </div>
+            <div class="stats" aria-label="Project facts">
+              <div class="stat"><b>Encrypted</b><span>SOPS and Age at rest</span></div>
+              <div class="stat"><b>Git-backed</b><span>sync encrypted files only</span></div>
+              <div class="stat"><b>Homelab-ready</b><span>single Docker service</span></div>
+            </div>
+          </div>
+          <div class="manifold" aria-label="Secrets injection flow">
+            <div class="line a"></div>
+            <div class="line b"></div>
+            <div class="line c"></div>
+            <article class="panel global">
+              <div class="label"><span>global/secrets.enc.json</span><span>SOPS</span></div>
+              <pre>DO_TOKEN=<span class="redact"></span>
+POKE_API_KEY=<span class="redact"></span>
+REGISTRY_PAT=<span class="redact"></span></pre>
+            </article>
+            <article class="panel project">
+              <div class="label"><span>pokedex/.env.template</span><span>input</span></div>
+              <pre>DO_TOKEN={{GLOBAL.DO_TOKEN}}
+PORT={{PORT}}
+HOST=pokedex.local</pre>
+            </article>
+            <div class="junction">
+              <img src="logo.svg" alt="Rage UI logo">
+            </div>
+            <article class="panel env">
+              <div class="label"><span>pokedex/.env</span><span>generated</span></div>
+              <pre>DO_TOKEN=<span class="redact"></span>
+PORT=8080
+HOST=pokedex.local</pre>
+            </article>
+            <div class="command"><span class="dot"></span><span>inject .env -> encrypt edits -> git add / commit / push</span></div>
+          </div>
+        </section>
+        <section id="features" aria-labelledby="features-title">
+          <div class="section-head">
+            <h2 id="features-title">A tiny vault for project fleets.</h2>
+            <p>Rage UI is deliberately scoped for one trusted operator managing a set of local or homelab projects.</p>
+          </div>
+          <div class="feature-grid">
+            <article class="feature"><span class="num">01 / vault</span><h3>Encrypted project stores</h3><p>Each project keeps a `secrets.enc.json` file encrypted by SOPS/Age, so Git stores ciphertext instead of raw values.</p></article>
+            <article class="feature"><span class="num">02 / global</span><h3>Shared secret reuse</h3><p>Put common tokens in `global/`, reference them from many templates, and rotate once instead of editing every project.</p></article>
+            <article class="feature"><span class="num">03 / inject</span><h3>Template-driven `.env` files</h3><p>Use `{{GLOBAL.KEY}}` and `{{KEY}}` placeholders to generate real `.env` files from encrypted inputs.</p></article>
+            <article class="feature"><span class="num">04 / sync</span><h3>GitOps workflow</h3><p>The UI exposes repository status and sync actions so encrypted changes can move through a normal Git remote.</p></article>
+          </div>
+        </section>
+        <section id="quickstart" aria-labelledby="quickstart-title">
+          <div class="section-head">
+            <h2 id="quickstart-title">Run the console locally.</h2>
+            <p>Start the Bun backend and Vite frontend in separate terminals, then open the web UI.</p>
+          </div>
+          <div class="quickstart">
+            <div class="terminal">
+              <div class="term-bar"><span></span><span></span><span></span></div>
+              <pre>git clone https://github.com/Sofian-bll/Rage-UI.git
+cd Rage-UI/backend
+bun install
+bun run server.ts
+# second terminal
+cd Rage-UI/frontend
+npm install
+npm run dev</pre>
+            </div>
+            <div class="terminal">
+              <div class="term-bar"><span></span><span></span><span></span></div>
+              <pre># template
+POKE_API_KEY={{GLOBAL.POKE_API_KEY}}
+DO_TOKEN={{GLOBAL.DO_TOKEN}}
+PORT={{PORT}}
+# generated output
+POKE_API_KEY=[masked]
+DO_TOKEN=[masked]
+PORT=8080</pre>
+            </div>
+          </div>
+        </section>
+        <section aria-labelledby="stack-title">
+          <div class="section-head">
+            <h2 id="stack-title">Stack and deployment.</h2>
+            <p>React 19 frontend, Bun plus Express API, SOPS/Age encryption, simple-git integration, Docker packaging, and Playwright coverage.</p>
+          </div>
+          <div class="links">
+            <a class="button" href="https://github.com/Sofian-bll/Rage-UI#docker">Docker setup</a>
+            <a class="button" href="https://github.com/Sofian-bll/Rage-UI#api-summary">API summary</a>
+            <a class="button" href="https://github.com/Sofian-bll/Rage-UI/tree/v1.0.0">v1.0.0 tag</a>
+          </div>
+        </section>
+      </main>
+      <footer>
+        <span>Rage UI is released under the MIT License.</span>
+      </footer>
+    </div>
+  </body>
+</html>

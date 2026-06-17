@@ -1,41 +1,81 @@
-# Rage UI — Global Secrets Manager & GitOps Injector
+<p align="center">
+  <img src="assets/logo.svg" alt="Rage UI logo" width="160">
+</p>
 
-Rage UI est un manager de secrets local-first avec interface web. Il permet de gérer des secrets globaux (clés API, tokens) et des secrets par projet, puis de les injecter automatiquement dans des fichiers `.env` via un système de templates, le tout chiffré avec **SOPS + Age** et synchronisé sur Git.
+<div align="center">
 
----
+# Rage UI
 
-## Concept en 30 secondes
+Local-first secrets manager and GitOps `.env` injector for homelab and personal projects.
 
-Tu as plusieurs projets (Pokedex, API Météo...) qui ont tous besoin de secrets (un token DigitalOcean par exemple). Plutôt que de copier-coller le même token dans 10 fichiers `.env`, tu fais ça :
+[![License](https://img.shields.io/github/license/Sofian-bll/Rage-UI?style=for-the-badge)](https://github.com/Sofian-bll/Rage-UI/blob/main/LICENSE)
+[![Version](https://img.shields.io/github/v/tag/Sofian-bll/Rage-UI?style=for-the-badge)](https://github.com/Sofian-bll/Rage-UI/tags)
+[![Stars](https://img.shields.io/github/stars/Sofian-bll/Rage-UI?style=for-the-badge)](https://github.com/Sofian-bll/Rage-UI/stargazers)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](frontend/package.json)
+[![Bun](https://img.shields.io/badge/Bun-backend-000000?style=for-the-badge&logo=bun&logoColor=white)](backend/package.json)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](docker-compose.yml)
 
-1. **Un coffre-fort central** : le dossier `global/` contient tes secrets communs (ex: `DO_TOKEN`).
-2. **Un template par projet** : chaque projet a un fichier `.env.template` qui dit ce dont il a besoin (ex: `DO_TOKEN={{GLOBAL.DO_TOKEN}}`).
-3. **Un clic sur "Inject .env"** : Rage UI lit le template, fusionne les secrets globaux + locaux, et génère le vrai `.env`.
+</div>
 
-Si ton token DigitalOcean change, tu le modifies **une seule fois** dans `global`, tu cliques sur "Inject" dans chaque projet, et tout est à jour.
+> [Read in English](README.md) | [Lire en Français](README.fr.md)
 
-```
+## What is this?
+
+Rage UI is a local-first web app for managing shared and per-project secrets. It stores secrets as SOPS/Age-encrypted JSON files, lets you edit them from a React UI, and injects them into project `.env` files from templates.
+
+It is built for personal infrastructure, homelabs, and small project fleets where the same tokens or API keys are reused across several apps but should stay encrypted in Git.
+
+## How it works
+
+1. Keep shared values in a central `global/` project.
+2. Keep project-specific values beside each project.
+3. Define `.env.template` files with placeholders such as `{{GLOBAL.DO_TOKEN}}` or `{{PORT}}`.
+4. Click **Inject .env** to merge global and local secrets into a generated `.env` file.
+5. Sync the encrypted secret files through Git, not the generated `.env` files.
+
+```text
 PROJECTS_DIR/
 ├── global/
-│   └── secrets.enc.json          ← Secrets communs (DO_TOKEN, clés API...)
+│   └── secrets.enc.json
 ├── pokedex/
-│   ├── .env.template             ← DO_TOKEN={{GLOBAL.DO_TOKEN}}
-│   └── secrets.enc.json          ← Secrets propres à Pokedex (PORT=8080)
+│   ├── .env.template
+│   └── secrets.enc.json
 └── api_meteo/
     ├── .env.template
     └── secrets.enc.json
 ```
 
----
+## Architecture
 
-## Quickstart Local (tester sur ton PC en 1 minute)
+```mermaid
+graph LR
+    UI[React UI] --> API[Bun + Express API]
+    API --> SOPS[SOPS / Age]
+    API --> Git[Git repository]
+    SOPS --> Global[global/secrets.enc.json]
+    SOPS --> Project[project/secrets.enc.json]
+    Global --> Injector[Template injector]
+    Project --> Injector
+    Template[.env.template] --> Injector
+    Injector --> Env[generated .env]
+```
 
-### Prérequis
+## Quick Start
 
-- **Bun** installé (`brew install oven-sh/bun/bun` ou https://bun.sh)
-- **Node.js** installé (pour le frontend)
+### Prerequisites
 
-### 1. Lance le Backend (Bun + Express)
+- Bun for the backend.
+- Node.js and npm for the Vite frontend.
+- SOPS and an Age key when you want to encrypt real secrets.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Sofian-bll/Rage-UI.git
+cd Rage-UI
+```
+
+### 2. Run the backend
 
 ```bash
 cd backend
@@ -43,11 +83,11 @@ bun install
 bun run server.ts
 ```
 
-Le backend tourne sur `http://localhost:3000`.
+The API runs on `http://localhost:3000`.
 
-### 2. Lance le Frontend (Vite + React)
+### 3. Run the frontend
 
-Dans un **deuxième terminal** :
+Open a second terminal from the repository root:
 
 ```bash
 cd frontend
@@ -55,135 +95,149 @@ npm install
 npm run dev
 ```
 
-Le frontend tourne sur `http://localhost:5173`. Les appels `/api` sont automatiquement redirigés vers le backend.
+The frontend runs on `http://localhost:5173` and proxies `/api` requests to the backend.
 
-### 3. Teste dans l'interface
+### 4. Try the injection flow
 
-Le dossier `backend/projects/` contient déjà deux projets de test (`pokedex` et `api_meteo`) avec leurs `.env.template`.
+1. Select `global` and add a shared secret such as `POKE_API_KEY`.
+2. Select a project such as `pokedex` and add a local value such as `PORT`.
+3. Click **Inject .env**.
+4. Check the generated `.env` file in the project folder.
 
-1. Dans la sidebar, clique sur **global** → ajoute une variable `POKE_API_KEY` avec la valeur `123456` → clique **Save**.
-2. Clique sur **pokedex** → ajoute une variable `PORT` avec la valeur `8080` → **Save**.
-3. Toujours sur Pokedex, clique sur le bouton ⚡ **Inject .env** en haut à droite.
-4. Ouvre `backend/projects/pokedex/.env` : ton fichier `.env` vient d'être généré avec les valeurs fusionnées !
+## Template Syntax
 
----
+| Syntax | Source | Example |
+|--------|--------|---------|
+| `{{GLOBAL.KEY}}` | Secret from `global/` | `{{GLOBAL.DO_TOKEN}}` |
+| `{{KEY}}` | Secret from the active project | `{{PORT}}` |
 
-## Structure des Templates
+Project secrets override global secrets when the same key is present in both places.
 
-Le fichier `.env.template` utilise des placeholders que Rage UI remplace à l'injection :
+Example `.env.template`:
 
-| Syntaxe | Source | Exemple |
-|---------|--------|---------|
-| `{{GLOBAL.KEY}}` | Secret du dossier `global/` | `{{GLOBAL.DO_TOKEN}}` |
-| `{{KEY}}` | Secret local du projet | `{{PORT}}` |
-
-**Exemple de `.env.template` :**
-```
-# Pokedex
+```dotenv
 POKE_API_KEY={{GLOBAL.POKE_API_KEY}}
 DO_TOKEN={{GLOBAL.DO_TOKEN}}
 PORT={{PORT}}
 HOST=pokedex.local
 ```
 
-Les secrets locaux **écrasent** les secrets globaux si le même nom est utilisé.
+## Configuration
 
----
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `PROJECTS_DIR` | Directory containing `global/` and project folders | `./projects` |
+| `APP_API_KEY` | Optional API key for write routes via `x-api-key` | unset |
+| `SOPS_AGE_KEY_FILE` | Age private key used by SOPS | SOPS default path |
 
-## Docker (Production / Homelab)
-
-Un `docker-compose.yml` est fourni pour un déploiement en conteneur.
-
-Le conteneur embarque tout : le backend Bun, le frontend statique, Git, SOPS, et OpenSSH.
-
-### Configuration Docker
-
-```yaml
-services:
-  sops-gitops-ui:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - APP_API_KEY=TokenSuperSecurise!    # Optionnel : protège les routes POST
-      - PROJECTS_DIR=/projets              # Dossier contenant global/ + projets
-    volumes:
-      - /home/sofiane/.config/sops/age/keys.txt:/root/.config/sops/age/keys.txt:ro
-      - /home/sofiane/.ssh/id_rsa:/root/.ssh/id_rsa:ro
-      - /home/sofiane/docker-apps:/projets
-    restart: unless-stopped
-```
-
-Les volumes montent :
-1. **Clé Age SOPS** : nécessaire pour déchiffrer/chiffrer les secrets (fichier texte, à ne jamais commit).
-2. **Clé SSH Git** : pour push les secrets chiffrés vers GitHub/GitLab.
-3. **Dossier des projets** : ton dépôt Git contenant la structure `PROJECTS_DIR`.
-
-### Lancer en Docker
+To create an Age key:
 
 ```bash
-docker-compose up -d --build
-# Accéder à http://localhost:3000
-```
-
----
-
-## API Endpoints
-
-| Méthode | Route | Description | Auth |
-|---------|-------|-------------|------|
-| `GET` | `/api/projects` | Liste tous les projets (dossiers dans `PROJECTS_DIR`) | — |
-| `GET` | `/api/secrets/:project` | Déchiffre les secrets d'un projet | — |
-| `POST` | `/api/secrets/:project` | Chiffre et sauvegarde les secrets d'un projet | API Key |
-| `POST` | `/api/inject/:project` | Fusionne global + local, lit `.env.template`, génère `.env` | API Key |
-| `GET` | `/api/git/status` | État Git du dossier `PROJECTS_DIR` | — |
-| `POST` | `/api/git/sync` | `git add . && git commit && git push` | API Key |
-
----
-
-## Générer une clé Age (SOPS)
-
-Si tu n'as pas encore de clé Age pour SOPS :
-
-```bash
-# Installer SOPS
-brew install sops
-
-# Générer une clé Age
+brew install sops age
 age-keygen -o ~/.config/sops/age/keys.txt
 ```
 
-La clé publique s'affiche. Ajoute-la dans ton `.sops.yaml` à la racine de ton repo :
+Add the printed public key to your `.sops.yaml` in the secrets repository.
 
-```yaml
-creation_rules:
-  - age: <TA_CLE_PUBLIQUE>
+## Docker
+
+The repository includes a multi-stage Docker setup that serves the built frontend and backend from one container.
+
+```bash
+docker-compose up -d --build
 ```
 
----
+The compose file mounts three host resources:
+
+- the SOPS Age key file
+- the SSH key used for Git sync
+- the projects directory mounted as `PROJECTS_DIR`
+
+## API Summary
+
+| Method | Route | Description | Auth |
+|--------|-------|-------------|------|
+| `GET` | `/api/projects` | List project folders in `PROJECTS_DIR` | public |
+| `GET` | `/api/secrets/:project` | Decrypt and return project secrets | public |
+| `POST` | `/api/secrets/:project` | Encrypt and save project secrets | `APP_API_KEY` if set |
+| `POST` | `/api/inject/:project` | Merge secrets into `.env.template` and write `.env` | `APP_API_KEY` if set |
+| `GET` | `/api/git/status` | Return Git status for the project directory | public |
+| `POST` | `/api/git/sync` | Run add, commit, and push for encrypted secret changes | `APP_API_KEY` if set |
+
+## Project Structure
+
+```text
+Rage-UI/
+├── assets/
+│   └── logo.svg
+├── backend/
+│   ├── app.ts
+│   ├── app.test.ts
+│   ├── package.json
+│   └── server.ts
+├── docs/
+│   ├── index.html
+│   └── logo.svg
+├── e2e/
+│   ├── package.json
+│   └── playwright.config.ts
+├── frontend/
+│   ├── package.json
+│   ├── src/
+│   └── vite.config.js
+├── DAT-SOPS-GitOps-Architecture.pdf
+├── Dockerfile
+├── docker-compose.yml
+├── LICENSE
+└── README.md
+```
+
+## Documentation
+
+| Resource | Description |
+|----------|-------------|
+| [`README.fr.md`](README.fr.md) | French version of this README. |
+| [`backend/README.md`](backend/README.md) | Backend notes. |
+| [`frontend/README.md`](frontend/README.md) | Frontend notes. |
+| [`docs/index.html`](docs/index.html) | Portfolio landing page for GitHub Pages. |
+| [`DAT-SOPS-GitOps-Architecture.pdf`](DAT-SOPS-GitOps-Architecture.pdf) | Architecture document. |
 
 ## Tests
 
 ```bash
-# Backend (bun test)
+# Backend
 cd backend && bun test
 
-# Frontend (vitest)
+# Frontend
 cd frontend && npm run test
 
-# End-to-end (Playwright — nécessite frontend + backend lancés)
-cd e2e && npx playwright test
+# End-to-end, with backend and frontend already running
+cd e2e && npm run test
 ```
+
+## Security Notes
+
+- Commit encrypted `secrets.enc.json` files, not generated `.env` files.
+- Never commit Age private keys, SSH keys, or local `.env` files.
+- Use `APP_API_KEY` when exposing the app beyond trusted local development.
+- Treat this as a local/homelab control plane, not as a public multi-tenant secret manager.
+
+## Contributing
+
+Issues and small improvements are welcome. Keep changes focused, add or update tests when behavior changes, and avoid committing real secrets or generated `.env` files.
+
+<a href="https://github.com/Sofian-bll/Rage-UI/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Sofian-bll/Rage-UI" alt="Contributors">
+</a>
+
+## License
+
+Rage UI is released under the [MIT License](LICENSE).
 
 ---
 
-## Stack Technique
+<div align="center">
 
-| Couche | Technologie |
-|--------|------------|
-| Frontend | Vite + React (JSX) |
-| Backend | Bun + Express (TypeScript) |
-| Chiffrement | SOPS (Age) |
-| Git | simple-git |
-| Déploiement | Docker (multi-stage) |
-| Tests | bun test, Vitest, Playwright |
+[![Star History Chart](https://api.star-history.com/svg?repos=Sofian-bll/Rage-UI&type=Date)](https://star-history.com/#Sofian-bll/Rage-UI&Date)
+
+</div>

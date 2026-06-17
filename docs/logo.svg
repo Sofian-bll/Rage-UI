@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Rage UI logo</title>
+  <desc id="desc">A dark rounded square containing a glass vault, Git branch nodes, and an injection bolt.</desc>
+  <defs>
+    <linearGradient id="rage-bg" x1="18" y1="10" x2="114" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1b101f"/>
+      <stop offset="0.45" stop-color="#0b0a0c"/>
+      <stop offset="1" stop-color="#21140f"/>
+    </linearGradient>
+    <linearGradient id="rage-accent" x1="28" y1="22" x2="104" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff5e8a"/>
+      <stop offset="0.55" stop-color="#bf5af2"/>
+      <stop offset="1" stop-color="#ffc799"/>
+    </linearGradient>
+    <linearGradient id="rage-warm" x1="34" y1="26" x2="92" y2="98" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff2df"/>
+      <stop offset="1" stop-color="#ffc799"/>
+    </linearGradient>
+    <filter id="rage-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 1  0 1 0 0 .42  0 0 1 0 .78  0 0 0 .55 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="128" height="128" rx="30" fill="url(#rage-bg)"/>
+  <path d="M19 34C35 11 76 8 99 24c25 17 18 61-4 78-26 21-67 13-80-13C5 68 7 51 19 34Z" fill="url(#rage-accent)" opacity="0.12"/>
+  <path d="M30 90C19 69 27 41 48 31c18-9 42-4 54 12" fill="none" stroke="url(#rage-accent)" stroke-width="2" stroke-linecap="round" opacity="0.28"/>
+  <g filter="url(#rage-glow)">
+    <path d="M64 25 95 43v35L64 96 33 78V43L64 25Z" fill="rgba(255,255,255,0.035)" stroke="url(#rage-accent)" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M48 55h32a6 6 0 0 1 6 6v22H42V61a6 6 0 0 1 6-6Z" fill="rgba(10,10,12,0.68)" stroke="url(#rage-warm)" stroke-width="2.5"/>
+    <path d="M52 55v-8c0-7 5-13 12-13s12 6 12 13v8" fill="none" stroke="url(#rage-warm)" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="64" cy="69" r="4" fill="#ffc799"/>
+    <path d="M64 73v7" stroke="#ffc799" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <g fill="none" stroke="url(#rage-accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M29 43c13 0 20 8 29 20"/>
+    <path d="M99 45c-12 1-19 9-28 22"/>
+    <path d="M36 92c11-5 17-10 25-24"/>
+  </g>
+  <g fill="#0a0908" stroke="url(#rage-warm)" stroke-width="2.5">
+    <circle cx="29" cy="43" r="7"/>
+    <circle cx="99" cy="45" r="7"/>
+    <circle cx="36" cy="92" r="7"/>
+  </g>
+  <path d="M76 52 65 70h9l-17 24 5-19h-9l12-23Z" fill="url(#rage-accent)" opacity="0.96"/>
+</svg>
