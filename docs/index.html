@@ -1,483 +1,756 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Rage UI is a local-first secrets manager and GitOps .env injector for homelab and personal projects.">
-    <title>Rage UI - Local-first secrets manager</title>
-    <style>
-      :root {
-        color-scheme: dark;
-        --bg: #080708;
-        --bg-2: #120d14;
-        --surface: rgba(255, 255, 255, 0.065);
-        --surface-strong: rgba(255, 255, 255, 0.105);
-        --text: #fff7ef;
-        --muted: rgba(255, 247, 239, 0.66);
-        --faint: rgba(255, 247, 239, 0.38);
-        --line: rgba(255, 255, 255, 0.12);
-        --peach: #ffc799;
-        --pink: #ff5e8a;
-        --purple: #bf5af2;
-        --shadow: 0 24px 90px rgba(0, 0, 0, 0.45);
-        --display: "Arial Narrow", "Aptos Display", "Helvetica Neue", system-ui, sans-serif;
-        --body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-        --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rage UI — Local-first secrets dashboard and GitOps .env injector</title>
+  <style>
+    :root {
+      --bg: #080708;
+      --peach: #ffc799;
+      --pink: #ff5e8a;
+      --purple: #bf5af2;
+      --text: #f5f2eb;
+      --muted: rgba(245,242,235,0.58);
+      --surface: rgba(255,255,255,0.06) ;
+      --line: rgba(255,255,255,0.10) ;
+      --gradient: linear-gradient(135deg, #ffc799, #ff5e8a);
+    }
+
+    /* Reset & Base */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(191, 90, 242, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 85% 75%, rgba(255, 94, 138, 0.08) 0%, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    /* Typography */
+    h1, h2, h3 {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      text-transform: uppercase;
+      font-stretch: condensed;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: #fff;
+    }
+
+    p {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    code, pre {
+      font-family: "SF Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 13px;
+    }
+
+    /* Utility Interactive */
+    *:focus-visible {
+      outline: 2px solid var(--peach);
+      outline-offset: 4px;
+    }
+
+    /* Layout Containers */
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navigation */
+    header {
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background: rgba(8, 7, 8, 0.75);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-inner {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #fff;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Pills & Buttons */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--text);
+      text-decoration: none;
+      transition: background 0.2s ease-out, border-color 0.2s ease-out;
+    }
+
+    .pill:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .pill-icon {
+      width: 14px;
+      height: 14px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease-out;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      transform: scale(1.02);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-gradient {
+      background: var(--gradient);
+      color: var(--bg);
+      border: none;
+      font-weight: 600;
+    }
+
+    .btn-gradient:hover {
+      box-shadow: 0 0 20px rgba(255, 94, 138, 0.3);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+
+    .btn-outline:hover {
+      background: var(--surface);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 96px 0 64px;
+      text-align: center;
+    }
+
+    .hero-logo-wrapper {
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .logo-large {
+      width: 80px;
+      height: 80px;
+      filter: drop-shadow(0 4px 20px rgba(191, 90, 242, 0.15));
+    }
+
+    .eyebrow-badge {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(191, 90, 242, 0.1);
+      border: 1px solid rgba(191, 90, 242, 0.2);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--peach);
+      margin-bottom: 24px;
+    }
+
+    .pulse-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background-color: var(--pink);
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.85); opacity: 0.5; }
+      50% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(0.85); opacity: 0.5; }
+    }
+
+    .hero-title {
+      font-size: clamp(32px, 6vw, 56px);
+      line-height: 1.05;
+      max-width: 800px;
+      margin: 0 auto 20px;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(16px, 2.5vw, 19px);
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto 36px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 64px;
+      flex-wrap: wrap;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 40px 0;
+      margin-bottom: 40px;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .stat-title {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--peach);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+
+    .stat-desc {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .deploy-pills {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .deploy-label {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    /* Section Headers */
+    .section-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .section-header h2 {
+      font-size: clamp(24px, 4vw, 36px);
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    /* Features Grid */
+    .features {
+      padding: 80px 0;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    @media (min-width: 640px) {
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
-      * { box-sizing: border-box; }
-      html { scroll-behavior: smooth; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: var(--body);
-        background:
-          radial-gradient(circle at 12% 12%, rgba(255, 94, 138, 0.18), transparent 28rem),
-          radial-gradient(circle at 86% 16%, rgba(191, 90, 242, 0.18), transparent 30rem),
-          radial-gradient(circle at 52% 92%, rgba(255, 199, 153, 0.12), transparent 28rem),
-          linear-gradient(180deg, var(--bg), #0c0908 62%, #060505);
-        color: var(--text);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 32px;
+      transition: border-color 0.2s ease-out, background 0.2s ease-out, transform 0.2s ease-out;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card:hover {
+      border-color: var(--pink);
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .card-icon {
+      color: var(--peach);
+      width: 28px;
+      height: 28px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      color: #fff;
+    }
+
+    /* Quick Start & Terminals */
+    .quickstart {
+      padding: 80px 0;
+    }
+
+    .terminal-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    @media (min-width: 1024px) {
+      .terminal-container {
+        grid-template-columns: repeat(2, 1fr);
       }
-      a { color: inherit; text-decoration: none; }
-      .page {
-        width: min(1180px, calc(100% - 36px));
-        margin: 0 auto;
+    }
+
+    .terminal-window {
+      background: #090808;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .terminal-header {
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--line);
+      height: 40px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .traffic-lights {
+      display: flex;
+      gap: 8px;
+    }
+
+    .light {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .light-red { background: #ff5f56; }
+    .light-yellow { background: #ffbd2e; }
+    .light-green { background: #27c93f; }
+
+    .terminal-title {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: "SF Mono", monospace;
+    }
+
+    .terminal-body {
+      padding: 20px;
+      position: relative;
+      overflow-x: auto;
+    }
+
+    .terminal-body pre {
+      color: var(--text);
+      line-height: 1.6;
+      white-space: pre;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 8px;
+      color: var(--text);
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s ease-out, background 0.1s;
+    }
+
+    .terminal-window:hover .copy-btn,
+    .terminal-window:focus-within .copy-btn {
+      opacity: 1;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .copy-btn.copied {
+      background: rgba(39, 201, 63, 0.2);
+      border-color: rgba(39, 201, 63, 0.4);
+      color: #27c93f;
+    }
+
+    /* Scroll Reveal Animation */
+    .reveal {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Media query to disable animations for prefers-reduced-motion */
+    @media (prefers-reduced-motion: reduce) {
+      .reveal {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
       }
-      .nav {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        padding: 22px 0;
+      * {
+        animation: none !important;
+        transition: none !important;
       }
-      .brand {
-        display: inline-flex;
-        align-items: center;
-        gap: 12px;
-        font-weight: 800;
-        letter-spacing: -0.04em;
-      }
-      .brand img { width: 38px; height: 38px; }
-      .nav-links {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        color: var(--muted);
-        font-size: 14px;
-      }
-      .nav-links a,
-      .button {
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        padding: 10px 14px;
-        background: rgba(255, 255, 255, 0.035);
-      }
-      .button.primary {
-        color: #130b10;
-        border-color: transparent;
-        background: linear-gradient(135deg, var(--peach), var(--pink));
-        font-weight: 800;
-      }
-      .nav-links a:focus-visible,
-      .button:focus-visible {
-        outline: 2px solid var(--peach);
-        outline-offset: 4px;
-      }
-      .hero {
-        display: grid;
-        grid-template-columns: minmax(0, 0.92fr) minmax(420px, 1.08fr);
-        gap: 38px;
-        align-items: center;
-        min-height: calc(100vh - 92px);
-        padding: 42px 0 72px;
-      }
-      .eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        width: fit-content;
-        margin-bottom: 18px;
-        border: 1px solid rgba(255,199,153,0.26);
-        border-radius: 999px;
-        padding: 7px 11px;
-        color: var(--peach);
-        font-family: var(--mono);
-        font-size: 12px;
-        letter-spacing: 0.02em;
-      }
-      .pulse {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--peach);
-        box-shadow: 0 0 0 0 rgba(255,199,153,0.6);
-        animation: pulse 2.4s infinite;
-      }
-      h1, h2, h3 { margin: 0; }
-      h1 {
-        max-width: 680px;
-        font-family: var(--display);
-        font-size: clamp(56px, 8.8vw, 132px);
-        line-height: 0.82;
-        letter-spacing: -0.09em;
-        text-transform: uppercase;
-      }
-      h1 span {
-        display: block;
-        color: transparent;
-        -webkit-text-stroke: 1px rgba(255,247,239,0.54);
-        text-shadow: none;
-      }
-      .hero-copy p {
-        max-width: 640px;
-        margin: 24px 0 0;
-        color: var(--muted);
-        font-size: clamp(17px, 2vw, 21px);
-        line-height: 1.65;
-      }
-      .actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-top: 30px;
-      }
-      .stats {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
-        margin-top: 34px;
-      }
-      .stat {
-        border: 1px solid var(--line);
-        border-radius: 20px;
-        padding: 14px;
-        background: rgba(255, 255, 255, 0.04);
-      }
-      .stat b {
-        display: block;
-        margin-bottom: 5px;
-        color: var(--peach);
-        font-family: var(--mono);
-        font-size: 13px;
-      }
-      .stat span { color: var(--muted); font-size: 13px; }
-      .manifold {
-        position: relative;
-        min-height: 620px;
-        border: 1px solid var(--line);
-        border-radius: 34px;
-        padding: 20px;
-        background:
-          linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.026)),
-          radial-gradient(circle at 50% 45%, rgba(255,199,153,0.18), transparent 18rem);
-        box-shadow: var(--shadow);
-        overflow: hidden;
-      }
-      .manifold::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background-image:
-          linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
-        background-size: 28px 28px;
-        mask-image: radial-gradient(circle at 50% 48%, black, transparent 74%);
-        pointer-events: none;
-      }
-      .panel {
-        position: absolute;
-        z-index: 1;
-        width: min(250px, 44%);
-        border: 1px solid var(--line);
-        border-radius: 22px;
-        padding: 14px;
-        background: rgba(8, 7, 8, 0.72);
-        backdrop-filter: blur(18px);
-      }
-      .panel.global { left: 22px; top: 70px; }
-      .panel.project { left: 22px; bottom: 84px; }
-      .panel.env { right: 22px; top: 172px; }
-      .label {
-        display: flex;
-        justify-content: space-between;
-        gap: 10px;
-        margin-bottom: 12px;
-        color: var(--peach);
-        font-family: var(--mono);
-        font-size: 12px;
-      }
-      code, pre { font-family: var(--mono); }
-      pre {
-        margin: 0;
-        color: var(--muted);
-        font-size: 12px;
-        line-height: 1.7;
-        white-space: pre-wrap;
-      }
-      .redact {
-        display: inline-block;
-        width: 72px;
-        height: 0.85em;
-        border-radius: 999px;
-        background: linear-gradient(90deg, var(--pink), var(--purple));
-        vertical-align: -0.12em;
-      }
-      .junction {
-        position: absolute;
-        z-index: 2;
-        left: 50%;
-        top: 50%;
-        display: grid;
-        place-items: center;
-        width: 150px;
-        height: 150px;
-        transform: translate(-50%, -50%);
-        border: 1px solid rgba(255,199,153,0.28);
-        border-radius: 34px;
-        background: rgba(10, 9, 8, 0.86);
-        box-shadow: 0 0 90px rgba(255, 94, 138, 0.22);
-      }
-      .junction img { width: 92px; height: 92px; }
-      .line {
-        position: absolute;
-        z-index: 0;
-        height: 2px;
-        transform-origin: left center;
-        background: linear-gradient(90deg, transparent, var(--pink), var(--peach), transparent);
-        opacity: 0.78;
-      }
-      .line.a { left: 242px; top: 170px; width: 230px; transform: rotate(22deg); }
-      .line.b { left: 240px; bottom: 170px; width: 240px; transform: rotate(-24deg); }
-      .line.c { right: 224px; top: 300px; width: 190px; }
-      .command {
-        position: absolute;
-        left: 22px;
-        right: 22px;
-        bottom: 20px;
-        z-index: 2;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        padding: 13px 14px;
-        color: var(--muted);
-        background: rgba(0,0,0,0.34);
-        font-family: var(--mono);
-        font-size: 13px;
-      }
-      .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--peach); }
-      section { padding: 72px 0; }
-      .section-head {
-        display: flex;
-        align-items: end;
-        justify-content: space-between;
-        gap: 24px;
-        margin-bottom: 22px;
-      }
-      h2 {
-        max-width: 700px;
-        font-family: var(--display);
-        font-size: clamp(34px, 5vw, 70px);
-        line-height: 0.92;
-        letter-spacing: -0.07em;
-        text-transform: uppercase;
-      }
-      .section-head p { max-width: 430px; margin: 0; color: var(--muted); line-height: 1.6; }
-      .feature-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 14px;
-      }
-      .feature {
-        min-height: 220px;
-        border: 1px solid var(--line);
-        border-radius: 26px;
-        padding: 20px;
-        background: var(--surface);
-      }
-      .feature .num { color: var(--peach); font-family: var(--mono); font-size: 12px; }
-      .feature h3 { margin-top: 32px; font-size: 19px; letter-spacing: -0.04em; }
-      .feature p { color: var(--muted); line-height: 1.6; }
-      .quickstart {
-        display: grid;
-        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-        gap: 16px;
-      }
-      .terminal {
-        border: 1px solid var(--line);
-        border-radius: 28px;
-        overflow: hidden;
-        background: #090808;
-        box-shadow: var(--shadow);
-      }
-      .term-bar {
-        display: flex;
-        gap: 7px;
-        padding: 14px;
-        border-bottom: 1px solid var(--line);
-        background: rgba(255,255,255,0.04);
-      }
-      .term-bar span { width: 11px; height: 11px; border-radius: 50%; background: var(--faint); }
-      .term-bar span:nth-child(1) { background: var(--pink); }
-      .term-bar span:nth-child(2) { background: var(--peach); }
-      .term-bar span:nth-child(3) { background: #99ffe4; }
-      .terminal pre { padding: 20px; font-size: 14px; }
-      .links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-      }
-      footer {
-        border-top: 1px solid var(--line);
-        padding: 34px 0 46px;
-        color: var(--muted);
-        font-size: 14px;
-      }
-      @keyframes pulse {
-        70% { box-shadow: 0 0 0 14px rgba(255,199,153,0); }
-        100% { box-shadow: 0 0 0 0 rgba(255,199,153,0); }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        html { scroll-behavior: auto; }
-        .pulse { animation: none; }
-      }
-      @media (max-width: 980px) {
-        .hero, .quickstart { grid-template-columns: 1fr; min-height: auto; }
-        .manifold { min-height: 560px; }
-        .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      }
-      @media (max-width: 640px) {
-        .page { width: min(100% - 24px, 1180px); }
-        .nav { align-items: flex-start; flex-direction: column; }
-        .nav-links { flex-wrap: wrap; }
-        .hero { padding-top: 18px; }
-        .stats, .feature-grid { grid-template-columns: 1fr; }
-        .manifold { min-height: 760px; padding: 14px; }
-        .panel { position: relative; inset: auto !important; width: 100%; margin-bottom: 14px; }
-        .junction { position: relative; left: auto; top: auto; transform: none; margin: 18px auto; }
-        .line { display: none; }
-        .command { position: relative; left: auto; right: auto; bottom: auto; margin-top: 14px; align-items: flex-start; }
-        .section-head { display: block; }
-        .section-head p { margin-top: 14px; }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="page">
-      <nav class="nav" aria-label="Primary navigation">
-        <a class="brand" href="#top" aria-label="Rage UI home">
-          <img src="logo.svg" alt="Rage UI logo">
-          <span>Rage UI</span>
+    }
+
+    /* Footer Layout Fix */
+    footer {
+      border-top: 1px solid var(--line);
+      margin-top: 112px; /* Generous gap above the divider line */
+    }
+
+    .footer-inner {
+      padding: 48px 24px; /* Distinct padding below the line, preventing overlap */
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+
+    .footer-left {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* Text highlight */
+    .gradient-text {
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVIGATION -->
+  <header>
+    <div class="container nav-inner">
+      <a href="#" class="nav-brand" aria-label="Rage UI homepage">
+        <!-- SVG Shield R Monogram -->
+        <svg class="logo-svg" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#bf5af2" />
+              <stop offset="50%" stop-color="#ff5e8a" />
+              <stop offset="100%" stop-color="#ffc799" />
+            </linearGradient>
+          </defs>
+          <path d="M12 2.5 L4 5.5 V11.5 C4 16.8 7.4 20.8 12 21.5 C16.6 20.8 20 16.8 20 11.5 V5.5 L12 2.5 Z" stroke="url(#logoGrad)" stroke-width="2.2" stroke-linejoin="round" />
+          <path d="M9.5 8.5 H12.5 C13.6 8.5 14.5 9.1 14.5 10 C14.5 10.9 13.6 11.5 12.5 11.5 H9.5 V8.5 Z M9.5 11.5 H11 L13.5 15.5" stroke="url(#logoGrad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span>Rage UI</span>
+      </a>
+      <div class="nav-actions">
+        <a href="https://github.com/Sofian-bll/Rage-UI" class="pill" target="_blank" rel="noopener">
+          <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M16 22.0268V19.1568C16.0375 18.68 15.9731 18.2006 15.811 17.7506C15.6489 17.3006 15.3929 16.8902 15.06 16.5468C18.2 16.1968 21.5 15.0068 21.5 9.54679C21.4997 8.15062 20.9627 6.80799 20 5.79679C20.4558 4.5753 20.4236 3.22514 19.91 2.02679C19.91 2.02679 18.73 1.67679 16 3.50679C13.708 2.88561 11.292 2.88561 8.99999 3.50679C6.26999 1.67679 5.08999 2.02679 5.08999 2.02679C4.57636 3.22514 4.54413 4.5753 4.99999 5.79679C4.03011 6.81549 3.49251 8.17026 3.49999 9.57679C3.49999 14.9968 6.79998 16.1868 9.93998 16.5768C9.61098 16.9168 9.35725 17.3222 9.19529 17.7667C9.03334 18.2112 8.96679 18.6849 8.99999 19.1568V22.0268" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 20.0267C6 20.9999 3.5 20.0267 2 17.0267" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Star</span>
         </a>
-        <div class="nav-links">
-          <a href="#features">Features</a>
-          <a href="#quickstart">Quick start</a>
-          <a href="https://github.com/Sofian-bll/Rage-UI#readme">README</a>
-          <a href="https://github.com/Sofian-bll/Rage-UI">GitHub</a>
+        <div class="pill">
+          <span>v1.0.0</span>
         </div>
-      </nav>
-      <main id="top">
-        <section class="hero" aria-labelledby="hero-title">
-          <div class="hero-copy">
-            <div class="eyebrow"><span class="pulse"></span> local-first / SOPS / GitOps</div>
-            <h1 id="hero-title">Secrets without <span>copy paste drift.</span></h1>
-            <p>Rage UI gives personal infrastructure a small control plane: edit encrypted project secrets, reuse global values, inject `.env` files from templates, and sync only encrypted state through Git.</p>
-            <div class="actions">
-              <a class="button primary" href="https://github.com/Sofian-bll/Rage-UI">View repository</a>
-              <a class="button" href="#quickstart">Run locally</a>
-              <a class="button" href="https://github.com/Sofian-bll/Rage-UI/blob/main/README.fr.md">Lire en francais</a>
-            </div>
-            <div class="stats" aria-label="Project facts">
-              <div class="stat"><b>Encrypted</b><span>SOPS and Age at rest</span></div>
-              <div class="stat"><b>Git-backed</b><span>sync encrypted files only</span></div>
-              <div class="stat"><b>Homelab-ready</b><span>single Docker service</span></div>
-            </div>
-          </div>
-          <div class="manifold" aria-label="Secrets injection flow">
-            <div class="line a"></div>
-            <div class="line b"></div>
-            <div class="line c"></div>
-            <article class="panel global">
-              <div class="label"><span>global/secrets.enc.json</span><span>SOPS</span></div>
-              <pre>DO_TOKEN=<span class="redact"></span>
-POKE_API_KEY=<span class="redact"></span>
-REGISTRY_PAT=<span class="redact"></span></pre>
-            </article>
-            <article class="panel project">
-              <div class="label"><span>pokedex/.env.template</span><span>input</span></div>
-              <pre>DO_TOKEN={{GLOBAL.DO_TOKEN}}
-PORT={{PORT}}
-HOST=pokedex.local</pre>
-            </article>
-            <div class="junction">
-              <img src="logo.svg" alt="Rage UI logo">
-            </div>
-            <article class="panel env">
-              <div class="label"><span>pokedex/.env</span><span>generated</span></div>
-              <pre>DO_TOKEN=<span class="redact"></span>
-PORT=8080
-HOST=pokedex.local</pre>
-            </article>
-            <div class="command"><span class="dot"></span><span>inject .env -> encrypt edits -> git add / commit / push</span></div>
-          </div>
-        </section>
-        <section id="features" aria-labelledby="features-title">
-          <div class="section-head">
-            <h2 id="features-title">A tiny vault for project fleets.</h2>
-            <p>Rage UI is deliberately scoped for one trusted operator managing a set of local or homelab projects.</p>
-          </div>
-          <div class="feature-grid">
-            <article class="feature"><span class="num">01 / vault</span><h3>Encrypted project stores</h3><p>Each project keeps a `secrets.enc.json` file encrypted by SOPS/Age, so Git stores ciphertext instead of raw values.</p></article>
-            <article class="feature"><span class="num">02 / global</span><h3>Shared secret reuse</h3><p>Put common tokens in `global/`, reference them from many templates, and rotate once instead of editing every project.</p></article>
-            <article class="feature"><span class="num">03 / inject</span><h3>Template-driven `.env` files</h3><p>Use `{{GLOBAL.KEY}}` and `{{KEY}}` placeholders to generate real `.env` files from encrypted inputs.</p></article>
-            <article class="feature"><span class="num">04 / sync</span><h3>GitOps workflow</h3><p>The UI exposes repository status and sync actions so encrypted changes can move through a normal Git remote.</p></article>
-          </div>
-        </section>
-        <section id="quickstart" aria-labelledby="quickstart-title">
-          <div class="section-head">
-            <h2 id="quickstart-title">Run the console locally.</h2>
-            <p>Start the Bun backend and Vite frontend in separate terminals, then open the web UI.</p>
-          </div>
-          <div class="quickstart">
-            <div class="terminal">
-              <div class="term-bar"><span></span><span></span><span></span></div>
-              <pre>git clone https://github.com/Sofian-bll/Rage-UI.git
-cd Rage-UI/backend
-bun install
-bun run server.ts
-# second terminal
-cd Rage-UI/frontend
-npm install
-npm run dev</pre>
-            </div>
-            <div class="terminal">
-              <div class="term-bar"><span></span><span></span><span></span></div>
-              <pre># template
-POKE_API_KEY={{GLOBAL.POKE_API_KEY}}
-DO_TOKEN={{GLOBAL.DO_TOKEN}}
-PORT={{PORT}}
-# generated output
-POKE_API_KEY=[masked]
-DO_TOKEN=[masked]
-PORT=8080</pre>
-            </div>
-          </div>
-        </section>
-        <section aria-labelledby="stack-title">
-          <div class="section-head">
-            <h2 id="stack-title">Stack and deployment.</h2>
-            <p>React 19 frontend, Bun plus Express API, SOPS/Age encryption, simple-git integration, Docker packaging, and Playwright coverage.</p>
-          </div>
-          <div class="links">
-            <a class="button" href="https://github.com/Sofian-bll/Rage-UI#docker">Docker setup</a>
-            <a class="button" href="https://github.com/Sofian-bll/Rage-UI#api-summary">API summary</a>
-            <a class="button" href="https://github.com/Sofian-bll/Rage-UI/tree/v1.0.0">v1.0.0 tag</a>
-          </div>
-        </section>
-      </main>
-      <footer>
-        <span>Rage UI is released under the MIT License.</span>
-      </footer>
+      </div>
     </div>
-  </body>
+  </header>
+
+  <main>
+    <!-- HERO SECTION -->
+    <section class="hero container reveal">
+      <div class="hero-logo-wrapper">
+        <!-- Center-stage Large SVG Shield Logo -->
+        <svg class="logo-large" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="logoGradHero" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#bf5af2" />
+              <stop offset="50%" stop-color="#ff5e8a" />
+              <stop offset="100%" stop-color="#ffc799" />
+            </linearGradient>
+          </defs>
+          <path d="M12 2.5 L4 5.5 V11.5 C4 16.8 7.4 20.8 12 21.5 C16.6 20.8 20 16.8 20 11.5 V5.5 L12 2.5 Z" stroke="url(#logoGradHero)" stroke-width="2" stroke-linejoin="round" />
+          <path d="M9.5 8.5 H12.5 C13.6 8.5 14.5 9.1 14.5 10 C14.5 10.9 13.6 11.5 12.5 11.5 H9.5 V8.5 Z M9.5 11.5 H11 L13.5 15.5" stroke="url(#logoGradHero)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+
+      <div class="eyebrow-badge">
+        <span class="pulse-dot"></span>
+        <span>local-first · SOPS · GitOps</span>
+      </div>
+
+      <h1 class="hero-title">Secrets without <br><span class="gradient-text">copy paste drift.</span></h1>
+      <p class="hero-subtitle">
+        A React-based developer dashboard tailored for securely managing encrypted secrets, templating configurations, and syncing safely via git.
+      </p>
+
+      <div class="hero-ctas">
+        <a href="#quickstart" class="btn btn-gradient">Run locally</a>
+        <a href="https://github.com/Sofian-bll/Rage-UI" class="btn btn-outline" target="_blank" rel="noopener">
+          View repository
+        </a>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-row">
+        <div class="stat-item">
+          <span class="stat-title">Encrypted</span>
+          <span class="stat-desc">SOPS and Age at rest</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-title">Git-backed</span>
+          <span class="stat-desc">Sync encrypted files only</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-title">Homelab-ready</span>
+          <span class="stat-desc">Single Docker service</span>
+        </div>
+      </div>
+
+      <!-- Deploy Pills -->
+      <div class="deploy-pills">
+        <span class="deploy-label">Integrates with:</span>
+        <div class="pill">Docker</div>
+        <div class="pill">React 19</div>
+        <div class="pill">Bun + Express</div>
+        <div class="pill">Playwright</div>
+      </div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section class="features container">
+      <div class="section-header reveal">
+        <h2>A tiny vault for project fleets.</h2>
+        <p>Keep secrets secure and environments in sync without cloud dependencies.</p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Card 1 -->
+        <div class="card reveal">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M5 21V5C5 3.89543 5.89543 3 7 3H17C18.1046 3 19 3.89543 19 5V21L13.0815 17.1953C12.4227 16.7717 11.5773 16.7717 10.9185 17.1953L5 21Z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <h3 class="card-title">Encrypted vault</h3>
+          <p>Each project manages its own <code>secrets.enc.json</code>. Built on trusted industry standards, secrets stay encrypted at rest via SOPS and Age.</p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="card reveal">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M6 18.01L6.01 17.9989" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 6.01L6.01 5.99889" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 9.4V2.6C2 2.26863 2.26863 2 2.6 2H21.4C21.7314 2 22 2.26863 22 2.6V9.4C22 9.73137 21.7314 10 21.4 10H2.6C2.26863 10 2 9.73137 2 9.4Z" stroke-width="1.5"/>
+            <path d="M2 21.4V14.6C2 14.2686 2.26863 14 2.6 14H21.4C21.7314 14 22 14.2686 22 14.6V21.4C22 21.7314 21.7314 22 21.4 22H2.6C2.26863 22 2 21.7314 2 21.4Z" stroke-width="1.5"/>
+          </svg>
+          <h3 class="card-title">Global secret reuse</h3>
+          <p>Avoid duplicating critical variables. Define shared global tokens in a central namespace and safely reference them across your configurations.</p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="card reveal">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M10 17L9.33334 17C8.22877 17 7.33334 16.1047 7.33334 15.0002C7.33334 14.3284 7.33334 13.6211 7.33333 13.1111C7.33333 12.5556 6 12 6 12C6 12 7.33333 11.4444 7.33334 10.8889C7.33334 10.4359 7.33334 9.70586 7.33334 8.99998C7.33334 7.89541 8.22877 7 9.33334 7L10 7" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M14 17L14.6667 17C15.7712 17 16.6667 16.1047 16.6667 15.0002C16.6667 14.3284 16.6667 13.6211 16.6667 13.1111C16.6667 12.5556 18 12 18 12C18 12 16.6667 11.4444 16.6667 10.8889C16.6667 10.4359 16.6667 9.70586 16.6667 8.99998C16.6667 7.89541 15.7712 7 14.6667 7L14 7" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M21 3.6V20.4C21 20.7314 20.7314 21 20.4 21H3.6C3.26863 21 3 20.7314 3 20.4V3.6C3 3.26863 3.26863 3 3.6 3H20.4C20.7314 3 21 3.26863 21 3.6Z" stroke-width="1.5"/>
+          </svg>
+          <h3 class="card-title">Template injection</h3>
+          <p>Feed placeholders like <code>{{GLOBAL.KEY}}</code> into your local <code>.env.template</code> files. Generate fresh environment files in a single click.</p>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="card reveal">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M16 22.0268V19.1568C16.0375 18.68 15.9731 18.2006 15.811 17.7506C15.6489 17.3006 15.3929 16.8902 15.06 16.5468C18.2 16.1968 21.5 15.0068 21.5 9.54679C21.4997 8.15062 20.9627 6.80799 20 5.79679C20.4558 4.5753 20.4236 3.22514 19.91 2.02679C19.91 2.02679 18.73 1.67679 16 3.50679C13.708 2.88561 11.292 2.88561 8.99999 3.50679C6.26999 1.67679 5.08999 2.02679 5.08999 2.02679C4.57636 3.22514 4.54413 4.5753 4.99999 5.79679C4.03011 6.81549 3.49251 8.17026 3.49999 9.57679C3.49999 14.9968 6.79998 16.1868 9.93998 16.5768C9.61098 16.9168 9.35725 17.3222 9.19529 17.7667C9.03334 18.2112 8.96679 18.6849 8.99999 19.1568V22.0268" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 20.0267C6 20.9999 3.5 20.0267 2 17.0267" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <h3 class="card-title">GitOps from the UI</h3>
+          <p>Native integration right within the system. Check repository status, review encrypted changes, and stage, commit, or push directly to git.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUICK START SECTION -->
+    <section class="quickstart container" id="quickstart">
+      <div class="section-header reveal">
+        <h2>Run the console locally.</h2>
+        <p>A few simple steps to get you up and running with Rage UI.</p>
+      </div>
+
+      <div class="terminal-container reveal">
+        <!-- Setup Terminal -->
+        <div class="terminal-window">
+          <div class="terminal-header">
+            <div class="traffic-lights">
+              <span class="light light-red"></span>
+              <span class="light light-yellow"></span>
+              <span class="light light-green"></span>
+            </div>
+            <span class="terminal-title">setup.sh</span>
+          </div>
+          <div class="terminal-body">
+            <button class="copy-btn" aria-label="Copy code">Copy</button>
+            <pre><code>git clone https://github.com/Sofian-bll/Rage-UI.git
+cd Rage-UI/backend && bun install && bun run server.ts
+cd Rage-UI/frontend && npm install && npm run dev</code></pre>
+          </div>
+        </div>
+
+        <!-- Template Terminal -->
+        <div class="terminal-window">
+          <div class="terminal-header">
+            <div class="traffic-lights">
+              <span class="light light-red"></span>
+              <span class="light light-yellow"></span>
+              <span class="light light-green"></span>
+            </div>
+            <span class="terminal-title">env-merger-output</span>
+          </div>
+          <div class="terminal-body">
+            <button class="copy-btn" aria-label="Copy code">Copy</button>
+            <pre><code># .env.template
+DB_URL=postgresql://{{GLOBAL.DB_USER}}:{{DB_PASS}}@localhost:5432
+API_KEY={{GLOBAL.API_TOKEN}}
+
+# Generated .env (After UI Injection)
+DB_URL=postgresql://admin:supersecret123@localhost:5432
+API_KEY=rage_tok_99d14a5b</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container footer-inner">
+      <div class="footer-left">
+        &copy; 2026 Rage UI. Released under the <span class="gradient-text">MIT License</span>.
+      </div>
+      <a href="https://github.com/Sofian-bll/Rage-UI" class="pill" target="_blank" rel="noopener">
+        <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M16 22.0268V19.1568C16.0375 18.68 15.9731 18.2006 15.811 17.7506C15.6489 17.3006 15.3929 16.8902 15.06 16.5468C18.2 16.1968 21.5 15.0068 21.5 9.54679C21.4997 8.15062 20.9627 6.80799 20 5.79679C20.4558 4.5753 20.4236 3.22514 19.91 2.02679C19.91 2.02679 18.73 1.67679 16 3.50679C13.708 2.88561 11.292 2.88561 8.99999 3.50679C6.26999 1.67679 5.08999 2.02679 5.08999 2.02679C4.57636 3.22514 4.54413 4.5753 4.99999 5.79679C4.03011 6.81549 3.49251 8.17026 3.49999 9.57679C3.49999 14.9968 6.79998 16.1868 9.93998 16.5768C9.61098 16.9168 9.35725 17.3222 9.19529 17.7667C9.03334 18.2112 8.96679 18.6849 8.99999 19.1568V22.0268" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 20.0267C6 20.9999 3.5 20.0267 2 17.0267" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>GitHub</span>
+      </a>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Intersection Observer for Scroll Reveal
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('active');
+          }
+        });
+      }, { threshold: 0.05 });
+      document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+      // Terminal copy functionality
+      document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const pre = btn.nextElementSibling;
+          if (pre && pre.tagName === 'PRE') {
+            try {
+              await navigator.clipboard.writeText(pre.textContent.trim());
+              const original = btn.textContent;
+              btn.textContent = '✓ Copied';
+              btn.classList.add('copied');
+              setTimeout(() => {
+                btn.textContent = original;
+                btn.classList.remove('copied');
+              }, 1500);
+            } catch (err) {
+              console.error('Failed to copy', err);
+            }
+          }
+        });
+      });
+    });
+  </script>
+</body>
 </html>
