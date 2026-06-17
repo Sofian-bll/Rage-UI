@@ -18,12 +18,8 @@
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 0; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
         
-        /* Terminals */
-        .terminals { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 40px 0; }
-        .terminal { background: #1a1a1a; border-radius: 8px; padding: 16px; font-family: monospace; position: relative; border: 1px solid var(--line); }
-        .terminal-header { display: flex; justify-content: space-between; margin-bottom: 10px; color: var(--muted); font-size: 0.8em; }
-        .copy-btn { cursor: pointer; color: var(--peach); background: none; border: none; }
-        .terminal pre { margin: 0; color: #fff; overflow-x: auto; }
+        /* Footer */
+        footer { text-align: center; padding: 40px; color: var(--muted); border-top: 1px solid var(--line); }
     </style>
 </head>
 <body>
@@ -54,19 +50,30 @@
                 <div class="terminal">
                     <div class="terminal-header">
                         <span>install</span>
-                        <button class="copy-btn">copy</button>
+                        <button class="copy-btn" onclick="copyText('npm install rage-ui')">copy</button>
                     </div>
                     <pre>npm install rage-ui</pre>
                 </div>
                 <div class="terminal">
                     <div class="terminal-header">
                         <span>init</span>
-                        <button class="copy-btn">copy</button>
+                        <button class="copy-btn" onclick="copyText('npx rage-ui init')">copy</button>
                     </div>
                     <pre>npx rage-ui init</pre>
                 </div>
             </div>
         </section>
+        
+        <footer>
+            &copy; 2026 Rage UI. All rights reserved.
+        </footer>
     </div>
+    <script>
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied: ' + text);
+            });
+        }
+    </script>
 </body>
 </html>
