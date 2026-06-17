@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="Rage UI logo" width="160">
+  <img src="docs/assets/logo.png" alt="Rage UI logo" width="160">
 </p>
 
 <div align="center">
@@ -95,15 +95,14 @@ Mounts: SOPS Age key, SSH key, projects directory.
 
 ```
 Rage-UI/
-├── assets/
-│   └── logo.png
+├── docs/
+│   ├── assets/
+│   │   └── logo.png
+│   └── index.html
 ├── backend/
 │   ├── app.ts
 │   ├── app.test.ts
 │   └── server.ts
-├── docs/
-│   ├── index.html
-│   └── logo.png
 ├── e2e/
 │   └── playwright.config.ts
 ├── frontend/
