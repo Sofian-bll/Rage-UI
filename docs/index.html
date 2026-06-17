@@ -9,6 +9,7 @@
   <script>
     tailwind.config = {
       theme: {
+        screens: { '3xl': '1440px' },
         extend: {
           colors: {
             bg: '#080708',
@@ -94,7 +95,7 @@
 
   <!-- NAV -->
   <nav class="sticky top-0 z-50 w-full glass border-b border-white/5 py-4 px-6">
-    <div class="max-w-5xl mx-auto flex items-center gap-3">
+    <div class="max-w-5xl 3xl:max-w-7xl mx-auto flex items-center gap-3">
       <!-- LOGO: replace with final logo -->
       <img src="assets/logo.png" width="48" height="48" alt="Rage UI Logo" class="rounded-lg">
       <span class="headline text-lg font-bold tracking-tight">Rage UI</span>
@@ -112,7 +113,7 @@
   </nav>
 
   <main class="flex-1">
-    <div class="max-w-5xl mx-auto px-6 py-20 flex flex-col gap-24">
+    <div class="max-w-5xl 3xl:max-w-7xl mx-auto px-6 py-20 flex flex-col gap-24">
       
       <!-- HERO -->
       <section class="text-center flex flex-col items-center reveal">
@@ -242,7 +243,7 @@ cd ../frontend && npm install && npm run dev</code></pre>
 
   <!-- FOOTER -->
   <footer class="border-t border-white/5 py-10 px-6 mt-12">
-    <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+    <div class="max-w-5xl 3xl:max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
       <div class="text-muted text-sm font-medium">
         &copy; 2026 Rage UI. <span class="mx-2">·</span> MIT License
       </div>
